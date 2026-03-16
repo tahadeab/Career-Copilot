@@ -40,8 +40,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 
 # Initialize Flask-SQLAlchemy with the app
@@ -56,12 +55,14 @@ training_service = TrainingService()
 
 print("نوع app هو:", type(app))
 
-@app.before_first_request
 def create_tables():
     """Create database tables if they don't exist."""
     with app.app_context():
         db.create_all()
         logger.info("Database tables created successfully")
+
+# Create tables on startup
+create_tables()
 
 @app.route('/')
 def index():
