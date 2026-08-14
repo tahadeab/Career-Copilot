@@ -92,3 +92,20 @@ The next production milestones are provider-backed generative responses with ret
 ## License
 
 This project is released under the MIT License. See [LICENSE.md](LICENSE.md).
+
+## Authentication and private history
+
+Career Copilot now includes account authentication backed by the application database. Users can create an account, sign in, sign out, and inspect their active session through the following endpoints:
+
+| Endpoint | Purpose | Access |
+| --- | --- | --- |
+| `POST /api/auth/register` | Create an account with email, display name, and password | Public |
+| `POST /api/auth/login` | Start a secure server-side session | Public |
+| `POST /api/auth/logout` | Clear the current session | Authenticated |
+| `GET /api/auth/me` | Return the current authenticated user | Authenticated |
+| `GET /api/conversations` | Return only the signed-in user's history | Authenticated |
+| `GET /api/analytics` | Return only the signed-in user's metrics | Authenticated |
+
+Passwords are stored with Werkzeug's one-way password hashing utilities and are never returned by the API. The browser uses an `HttpOnly`, `SameSite=Lax` session cookie. Chat, conversation history, feedback, and analytics endpoints derive the user identity from the server session instead of trusting a client-supplied `user_id`. This prevents one account from reading or rating another account's conversations.
+
+For deployments behind HTTPS, set `SESSION_COOKIE_SECURE=true` and provide a strong random `SECRET_KEY` through the environment. Existing SQLite databases are upgraded with the authentication columns when the application starts; production deployments should still use a dedicated migration tool as the schema evolves.

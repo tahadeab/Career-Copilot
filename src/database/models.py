@@ -17,6 +17,9 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.String(100), primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    display_name = db.Column(db.String(120), nullable=True)
+    password_hash = db.Column(db.String(255), nullable=True)
     language_preference = db.Column(db.String(10), default="en", nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
@@ -27,6 +30,8 @@ class User(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "email": self.email,
+            "display_name": self.display_name,
             "language_preference": self.language_preference,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

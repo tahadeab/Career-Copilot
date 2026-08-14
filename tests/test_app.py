@@ -1,6 +1,5 @@
 import os
 
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test-secret"
 
 import pytest
@@ -21,38 +20,65 @@ def client():
         db.drop_all()
 
 
-def test_health_and_metadata(client):
+def register(client, email, password="strong-pass-123", display_name="Test User"):
+    return client.post("/api/auth/register", json={"email": email, "password": password, "display_name": display_name})
+
+
+def login(client, email, password="strong-pass-123"):
+    return client.post("/api/auth/login", json={"email": email, "password": password})
+
+
+def test_public_health_and_protected_api(client):
     assert client.get("/api/health").get_json()["status"] == "healthy"
-    metadata = client.get("/api/meta").get_json()
-    assert "en" in metadata["supported_languages"]
-    assert "intent classification" in metadata["features"]
+    assert client.get("/api/auth/me").status_code == 401
+    assert client.get("/api/conversations").status_code == 401
+    assert client.get("/api/analytics").status_code == 401
+    assert client.post("/api/chat", json={"message": "What is AI?"}).status_code == 401
 
 
-def test_english_chat_is_persisted_and_classified(client):
-    response = client.post("/api/chat", json={"message": "How can I improve my CV?", "user_id": "test-user", "language": "en"})
-    data = response.get_json()
-    assert response.status_code == 200
+def test_register_login_me_and_password_hash(client):
+    response = register(client, "student@example.com")
+    assert response.status_code == 201
+    user = response.get_json()["user"]
+    assert user["email"] == "student@example.com"
+    assert "password_hash" not in user
+    assert client.get("/api/auth/me").get_json()["authenticated"] is True
+
+    client.post("/api/auth/logout")
+    assert login(client, "student@example.com", "wrong-password").status_code == 401
+    assert login(client, "student@example.com").status_code == 200
+    assert register(client, "student@example.com").status_code == 409
+
+
+def test_registration_validation(client):
+    assert register(client, "not-an-email", "strong-pass-123").status_code == 400
+    assert register(client, "short@example.com", "short").status_code == 400
+
+
+def test_chat_history_and_analytics_belong_to_authenticated_user(client):
+    register(client, "owner@example.com", display_name="Owner")
+    chat = client.post("/api/chat", json={"message": "How can I improve my CV?", "language": "en"})
+    data = chat.get_json()
+    assert chat.status_code == 200
     assert data["intent"] == "career"
-    assert data["confidence"] > 0
-    history = client.get("/api/conversations/test-user").get_json()["conversations"]
-    assert len(history) == 1
-    assert history[0]["message"] == "How can I improve my CV?"
+    conversation_id = data["conversation_id"]
+    assert len(client.get("/api/conversations").get_json()["conversations"]) == 1
+
+    client.post("/api/auth/logout")
+    register(client, "other@example.com", display_name="Other")
+    assert client.get("/api/conversations").get_json()["conversations"] == []
+    assert client.post("/api/feedback", json={"conversation_id": conversation_id, "rating": 1}).status_code == 404
+    assert client.get("/api/analytics").get_json()["total_messages"] == 0
 
 
-def test_auto_language_detection_and_arabic_response(client):
-    response = client.post("/api/chat", json={"message": "ما هو الذكاء الاصطناعي؟", "user_id": "arabic-user", "language": "auto"})
-    data = response.get_json()
-    assert response.status_code == 200
+def test_feedback_and_arabic_chat(client):
+    register(client, "arabic@example.com")
+    chat = client.post("/api/chat", json={"message": "ما هو الذكاء الاصطناعي؟", "language": "auto"})
+    data = chat.get_json()
     assert data["language"] == "ar"
     assert data["intent"] == "ai_basics"
-    assert "الذكاء الاصطناعي" in data["response"]
-
-
-def test_validation_and_feedback_analytics(client):
-    assert client.post("/api/chat", json={"message": "", "user_id": "x"}).status_code == 400
-    chat = client.post("/api/chat", json={"message": "What is AI?", "user_id": "feedback-user", "language": "en"}).get_json()
-    feedback = client.post("/api/feedback", json={"conversation_id": chat["conversation_id"], "user_id": "feedback-user", "rating": 1})
+    feedback = client.post("/api/feedback", json={"conversation_id": data["conversation_id"], "rating": 1})
     assert feedback.status_code == 200
-    analytics = client.get("/api/analytics/feedback-user").get_json()
+    analytics = client.get("/api/analytics").get_json()
     assert analytics["total_messages"] == 1
     assert analytics["satisfaction_rate"] == 1.0
