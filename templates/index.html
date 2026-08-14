@@ -1,412 +1,71 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart AI Chatbot - Bilingual Assistant</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .chat-container {
-            width: 100%;
-            max-width: 600px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
-
-        .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .chat-header h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .chat-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .language-selector {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .language-btn {
-            padding: 8px 16px;
-            border: 2px solid white;
-            background: transparent;
-            color: white;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .language-btn.active {
-            background: white;
-            color: #667eea;
-        }
-
-        .chat-messages {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message.bot {
-            justify-content: flex-start;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 12px 18px;
-            border-radius: 18px;
-            line-height: 1.5;
-        }
-
-        .user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-bottom-right-radius: 4px;
-        }
-
-        .bot .message-content {
-            background: white;
-            color: #333;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .chat-input-area {
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .input-wrapper {
-            display: flex;
-            gap: 10px;
-        }
-
-        #messageInput {
-            flex: 1;
-            padding: 12px 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            outline: none;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        #messageInput:focus {
-            border-color: #667eea;
-        }
-
-        #sendBtn {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
-
-        #sendBtn:hover {
-            transform: scale(1.05);
-        }
-
-        #sendBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .feedback-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-        }
-
-        .feedback-btn {
-            padding: 4px 8px;
-            border: none;
-            background: #f0f0f0;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .feedback-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .typing-indicator {
-            display: none;
-            padding: 12px 18px;
-            background: white;
-            border-radius: 18px;
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .typing-indicator span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #667eea;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
-        }
-
-        .rtl {
-            direction: rtl;
-        }
-
-        .suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            padding: 10px 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .suggestion-btn {
-            padding: 6px 12px;
-            background: white;
-            border: 1px solid #667eea;
-            color: #667eea;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .suggestion-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Career Copilot — an explainable bilingual AI assistant for students and early-career builders." />
+  <title>Career Copilot | Explainable AI Assistant</title>
+  <style>
+    :root { --bg:#f4f7fb; --panel:#fff; --ink:#10233f; --muted:#68778d; --line:#e5eaf2; --brand:#4263eb; --brand2:#7048e8; --user:#e8edff; --shadow:0 20px 55px rgba(32,52,86,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at 15% 0,#e9efff 0,transparent 35%),var(--bg); color:var(--ink); min-height:100vh; }
+    body.dark { --bg:#0d1424; --panel:#151f33; --ink:#eef3ff; --muted:#9eacc5; --line:#263551; --user:#24365c; --shadow:0 20px 55px rgba(0,0,0,.28); background:radial-gradient(circle at 15% 0,#1a2c58 0,transparent 35%),var(--bg); }
+    .shell { width:min(1180px,calc(100% - 32px)); margin:28px auto; display:grid; grid-template-columns:300px 1fr; gap:18px; }
+    .card { background:color-mix(in srgb,var(--panel) 94%,transparent); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); }
+    aside { padding:24px; display:flex; flex-direction:column; min-height:760px; }
+    .brand { display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+    .logo { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; color:white; font-weight:800; background:linear-gradient(135deg,var(--brand),var(--brand2)); }
+    h1,h2,h3,p { margin-top:0; } h1 { font-size:20px; margin-bottom:3px; } h2 { font-size:26px; margin-bottom:7px; } p { color:var(--muted); line-height:1.55; }
+    .eyebrow { color:var(--brand); font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+    .feature { padding:14px 0; border-bottom:1px solid var(--line); } .feature strong { display:block; margin-bottom:4px; } .feature span { font-size:13px; color:var(--muted); }
+    .side-bottom { margin-top:auto; } .toggle-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; color:var(--muted); font-size:14px; }
+    button { border:0; cursor:pointer; font:inherit; } .pill { background:var(--panel); border:1px solid var(--line); color:var(--ink); border-radius:10px; padding:8px 10px; }
+    main { display:flex; flex-direction:column; min-height:760px; overflow:hidden; }
+    .topbar { padding:25px 28px 18px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; border-bottom:1px solid var(--line); }
+    .status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; } .dot { width:8px;height:8px;border-radius:50%;background:#20c997; box-shadow:0 0 0 4px rgba(32,201,151,.13); }
+    .metrics { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; } .metric { padding:9px 12px; border-radius:12px; background:var(--bg); font-size:12px; color:var(--muted); } .metric b { color:var(--ink); font-size:15px; margin-right:4px; }
+    #messages { flex:1; padding:24px 28px; overflow:auto; max-height:510px; } .message { display:flex; margin:14px 0; } .message.user { justify-content:flex-end; } .bubble { max-width:min(80%,650px); padding:14px 16px; border-radius:17px; line-height:1.55; white-space:pre-wrap; } .bot .bubble { background:var(--bg); border:1px solid var(--line); border-bottom-left-radius:5px; } .user .bubble { background:var(--user); border-bottom-right-radius:5px; }
+    .message-meta { display:flex; gap:7px; margin-top:8px; color:var(--muted); font-size:11px; align-items:center; } .feedback { display:flex; gap:5px; margin-top:8px; } .feedback button { padding:4px 8px; background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:8px; font-size:11px; }
+    .suggestions { padding:12px 28px; border-top:1px solid var(--line); display:flex; gap:8px; overflow:auto; } .suggestion { white-space:nowrap; padding:8px 12px; border:1px solid #b7c4ff; color:var(--brand); border-radius:99px; background:transparent; font-size:12px; }
+    .composer { padding:18px 28px 24px; } .input-row { display:flex; gap:10px; padding:8px; border:1px solid var(--line); border-radius:16px; background:var(--bg); } input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--ink); padding:9px 10px; font-size:15px; } .send { color:#fff; background:linear-gradient(135deg,var(--brand),var(--brand2)); padding:11px 18px; border-radius:11px; font-weight:700; } .hint { font-size:11px; color:var(--muted); margin:9px 3px 0; }
+    @media(max-width:850px) { .shell { grid-template-columns:1fr; } aside { min-height:auto; } .side-bottom { margin-top:20px; } main { min-height:680px; } }
+  </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1 id="headerTitle">🤖 Smart AI Chatbot</h1>
-            <p id="headerSubtitle">Your bilingual assistant (Arabic & English)</p>
-            <div class="language-selector">
-                <button class="language-btn active" onclick="setLanguage('en')">English</button>
-                <button class="language-btn" onclick="setLanguage('ar')">العربية</button>
-            </div>
-        </div>
-
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot">
-                <div class="message-content">
-                    Hello! How can I help you today? Feel free to ask me anything in English or Arabic.
-                </div>
-            </div>
-        </div>
-
-        <div class="typing-indicator" id="typingIndicator">
-            <span></span><span></span><span></span>
-        </div>
-
-        <div class="suggestions" id="suggestions">
-            <button class="suggestion-btn" onclick="sendSuggestion('What is AI?')">What is AI?</button>
-            <button class="suggestion-btn" onclick="sendSuggestion('How are you?')">How are you?</button>
-            <button class="suggestion-btn" onclick="sendSuggestion('ما هو الذكاء الاصطناعي؟')">ما هو الذكاء الاصطناعي؟</button>
-            <button class="suggestion-btn" onclick="sendSuggestion('كيف حالك؟')">كيف حالك؟</button>
-        </div>
-
-        <div class="chat-input-area">
-            <div class="input-wrapper">
-                <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
-                <button id="sendBtn" onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let currentLanguage = 'en';
-        const userId = 'user_' + Math.random().toString(36).substr(2, 9);
-
-        function setLanguage(lang) {
-            currentLanguage = lang;
-            document.querySelectorAll('.language-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            const input = document.getElementById('messageInput');
-            if (lang === 'ar') {
-                document.body.classList.add('rtl');
-                document.documentElement.setAttribute('dir', 'rtl');
-                input.placeholder = 'اكتب رسالتك...';
-            } else {
-                document.body.classList.remove('rtl');
-                document.documentElement.setAttribute('dir', 'ltr');
-                input.placeholder = 'Type your message...';
-            }
-        }
-
-        function addMessage(content, isUser) {
-            const messagesDiv = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-            
-            const messageContent = document.createElement('div');
-            messageContent.className = 'message-content';
-            messageContent.textContent = content;
-            
-            messageDiv.appendChild(messageContent);
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            return messageDiv;
-        }
-
-        function showTyping() {
-            document.getElementById('typingIndicator').style.display = 'block';
-            document.getElementById('chatMessages').scrollTop = 
-                document.getElementById('chatMessages').scrollHeight;
-        }
-
-        function hideTyping() {
-            document.getElementById('typingIndicator').style.display = 'none';
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-
-            // Add user message
-            addMessage(message, true);
-            input.value = '';
-
-            // Show typing indicator
-            showTyping();
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        user_id: userId,
-                        language: currentLanguage
-                    })
-                });
-
-                const data = await response.json();
-                
-                hideTyping();
-                
-                if (data.response) {
-                    const botMessage = addMessage(data.response, false);
-                    
-                    // Add feedback buttons
-                    const feedbackDiv = document.createElement('div');
-                    feedbackDiv.className = 'feedback-buttons';
-                    feedbackDiv.innerHTML = `
-                        <button class="feedback-btn" onclick="submitFeedback(${data.conversation_id}, 1)">👍 Helpful</button>
-                        <button class="feedback-btn" onclick="submitFeedback(${data.conversation_id}, 0)">👎 Not helpful</button>
-                    `;
-                    botMessage.querySelector('.message-content').appendChild(feedbackDiv);
-                }
-            } catch (error) {
-                hideTyping();
-                addMessage('Sorry, there was an error processing your request.', false);
-                console.error('Error:', error);
-            }
-        }
-
-        function sendSuggestion(text) {
-            document.getElementById('messageInput').value = text;
-            sendMessage();
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        async function submitFeedback(conversationId, rating) {
-            try {
-                await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        conversation_id: conversationId,
-                        rating: rating,
-                        user_id: userId
-                    })
-                });
-            } catch (error) {
-                console.error('Error submitting feedback:', error);
-            }
-        }
-    </script>
+  <div class="shell">
+    <aside class="card">
+      <div class="brand"><div class="logo">CC</div><div><h1>Career Copilot</h1><span class="eyebrow">Explainable AI</span></div></div>
+      <p>A practical bilingual assistant designed to help students turn questions into clear next steps.</p>
+      <div class="feature"><strong>Intent-aware guidance</strong><span>Classifies requests across learning, AI, and career topics.</span></div>
+      <div class="feature"><strong>Feedback loop</strong><span>Rate answers and inspect your personal quality metrics.</span></div>
+      <div class="feature"><strong>Privacy-first demo</strong><span>Conversations are stored locally in the configured database.</span></div>
+      <div class="side-bottom">
+        <div class="toggle-row"><span>Language</span><button id="langBtn" class="pill" onclick="toggleLanguage()">English</button></div>
+        <div class="toggle-row"><span>Appearance</span><button class="pill" onclick="toggleTheme()">Toggle theme</button></div>
+        <div class="status"><span class="dot"></span><span id="systemStatus">System operational</span></div>
+      </div>
+    </aside>
+    <main class="card">
+      <header class="topbar"><div><div class="eyebrow">Student productivity platform</div><h2>Build your next breakthrough.</h2><p>Ask about AI, study plans, graduation projects, CVs, interviews, or portfolio strategy.</p><div class="metrics"><div class="metric"><b id="messageCount">0</b>messages</div><div class="metric"><b id="satisfaction">—</b>satisfaction</div><div class="metric"><b id="activeIntent">general</b>last intent</div></div></div><div class="status"><span class="dot"></span>Online</div></header>
+      <section id="messages"><div class="message bot"><div><div class="bubble">Hi, I’m Career Copilot. I can help you plan, learn, and present your work with confidence. What would you like to accomplish today?</div><div class="message-meta">Career Copilot · ready</div></div></div></section>
+      <div id="suggestions" class="suggestions"></div>
+      <section class="composer"><div class="input-row"><input id="messageInput" maxlength="2000" placeholder="Ask a focused question..." autocomplete="off" /><button class="send" id="sendBtn">Send</button></div><div class="hint">Press Enter to send · English and Arabic are supported · Responses are explainable and stored for this session.</div></section>
+    </main>
+  </div>
+<script>
+  const state = { language:'en', userId:localStorage.getItem('career-copilot-user') || `user_${crypto.randomUUID()}`, messages:0 };
+  localStorage.setItem('career-copilot-user', state.userId);
+  const $ = (id) => document.getElementById(id);
+  function toggleTheme(){ document.body.classList.toggle('dark'); localStorage.setItem('career-copilot-theme', document.body.classList.contains('dark')?'dark':'light'); }
+  if(localStorage.getItem('career-copilot-theme')==='dark') document.body.classList.add('dark');
+  function toggleLanguage(){ state.language = state.language==='en'?'ar':'en'; document.documentElement.lang=state.language; document.documentElement.dir=state.language==='ar'?'rtl':'ltr'; $('langBtn').textContent=state.language==='en'?'English':'العربية'; $('messageInput').placeholder=state.language==='en'?'Ask a focused question...':'اكتب سؤالك بوضوح...'; loadSuggestions(); }
+  function addMessage(text, role, meta='', id=null){ const wrap=document.createElement('div'); wrap.className=`message ${role}`; const inner=document.createElement('div'); const bubble=document.createElement('div'); bubble.className='bubble'; bubble.textContent=text; inner.appendChild(bubble); if(meta||id){ const m=document.createElement('div'); m.className='message-meta'; m.textContent=meta || 'Career Copilot'; inner.appendChild(m); } if(role==='bot' && id){ const f=document.createElement('div'); f.className='feedback'; f.innerHTML=`<button onclick="sendFeedback(${id},1)">Helpful</button><button onclick="sendFeedback(${id},0)">Needs work</button>`; inner.appendChild(f); } wrap.appendChild(inner); $('messages').appendChild(wrap); $('messages').scrollTop=$('messages').scrollHeight; }
+  async function loadSuggestions(){ const r=await fetch(`/api/suggestions?language=${state.language}`); const data=await r.json(); $('suggestions').innerHTML=data.suggestions.map(s=>`<button class="suggestion" onclick="useSuggestion(${JSON.stringify(s)})">${s}</button>`).join(''); }
+  function useSuggestion(text){ $('messageInput').value=text; $('messageInput').focus(); }
+  async function sendMessage(){ const input=$('messageInput'); const text=input.value.trim(); if(!text) return; input.value=''; $('sendBtn').disabled=true; addMessage(text,'user','You'); $('messages').insertAdjacentHTML('beforeend','<div id="typing" class="message bot"><div><div class="bubble">Thinking...</div></div></div>'); $('messages').scrollTop=$('messages').scrollHeight; try { const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,user_id:state.userId,language:state.language})}); const data=await r.json(); $('typing')?.remove(); if(!r.ok) throw new Error(data.error||'Request failed'); state.messages++; $('messageCount').textContent=state.messages; $('activeIntent').textContent=data.intent; addMessage(data.response,'bot',`${data.intent} · ${Math.round(data.confidence*100)}% confidence · ${data.sentiment}`,data.conversation_id); refreshAnalytics(); } catch(e){ $('typing')?.remove(); addMessage(e.message,'bot','System'); } finally { $('sendBtn').disabled=false; input.focus(); } }
+  async function sendFeedback(id,rating){ await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:id,user_id:state.userId,rating})}); refreshAnalytics(); }
+  async function refreshAnalytics(){ const r=await fetch(`/api/analytics/${state.userId}`); const d=await r.json(); if(d.satisfaction_rate!==null) $('satisfaction').textContent=`${Math.round(d.satisfaction_rate*100)}%`; }
+  $('sendBtn').addEventListener('click',sendMessage); $('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}); loadSuggestions();
+</script>
 </body>
 </html>

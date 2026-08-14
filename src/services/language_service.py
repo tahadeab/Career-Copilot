@@ -1,64 +1,36 @@
-"""
-Language Service - Language detection and translation
-"""
+"""Language utilities for the bilingual Career Copilot experience."""
 
-import logging
-
-logger = logging.getLogger(__name__)
+import re
 
 
 class LanguageService:
-    """Service for language detection and translation."""
-    
-    def __init__(self):
-        self.supported_languages = ['en', 'ar']
-    
+    supported_languages = ("en", "ar")
+
     def detect_language(self, text: str) -> str:
-        """
-        Detect the language of the given text.
-        
-        Args:
-            text: The text to analyze
-            
-        Returns:
-            Language code ('en' or 'ar')
-        """
-        # Simple heuristic based on Arabic character detection
-        arabic_chars = set('ابتثجحخدذرزسشصضطظعغفقكلمنهويآأإةؤئ')
-        
-        # Count Arabic characters
-        arabic_count = sum(1 for char in text if char in arabic_chars)
-        
-        # If more than 30% Arabic characters, consider it Arabic
-        if len(text) > 0 and (arabic_count / len(text)) > 0.3:
-            return 'ar'
-        
-        return 'en'
-    
+        """Detect Arabic when Arabic letters are dominant; otherwise default to English."""
+        letters = re.findall(r"[A-Za-z\u0600-\u06ff]", text or "")
+        if not letters:
+            return "en"
+        arabic = sum("\u0600" <= char <= "\u06ff" for char in letters)
+        return "ar" if arabic / len(letters) >= 0.25 else "en"
+
     def translate_text(self, text: str, target_language: str) -> str:
+        """Translate common product phrases without pretending to be a general translator.
+
+        The API clearly marks unsupported free-form translation so a production deployment
+        can plug in a provider through an environment variable later.
         """
-        Translate text to the target language.
-        For now, returns a placeholder message.
-        
-        Args:
-            text: The text to translate
-            target_language: Target language code
-            
-        Returns:
-            Translated text (or placeholder)
-        """
-        logger.info(f"Translation requested: {text[:50]}... to {target_language}")
-        
-        # Placeholder translations
-        if target_language == 'ar':
-            return "[ترجمة] " + text
-        else:
-            return "[Translation] " + text
-    
-    def get_language_name(self, language_code: str) -> str:
-        """Get the full name of a language from its code."""
-        names = {
-            'en': 'English',
-            'ar': 'العربية'
+        if target_language not in self.supported_languages:
+            raise ValueError("Unsupported target language")
+        dictionary = {
+            ("What is AI?", "ar"): "ما هو الذكاء الاصطناعي؟",
+            ("What can you do?", "ar"): "ماذا تستطيع أن تفعل؟",
+            ("ما هو الذكاء الاصطناعي؟", "en"): "What is artificial intelligence?",
+            ("ماذا تستطيع أن تفعل؟", "en"): "What can you do?",
         }
-        return names.get(language_code, language_code)
+        if self.detect_language(text) == target_language:
+            return text
+        return dictionary.get((text, target_language), text)
+
+    def get_language_name(self, language_code: str) -> str:
+        return {"en": "English", "ar": "Arabic"}.get(language_code, language_code)

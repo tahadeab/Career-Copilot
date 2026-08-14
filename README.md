@@ -1,104 +1,94 @@
-🤖 Graduation Project: Bilingual AI Chatbot (Arabic & English) using NLP
-📌 Project Idea
-This project aims to develop an intelligent assistant (Chatbot) capable of:
+# Career Copilot
 
-Understanding both Arabic and English
+> An explainable bilingual AI assistant that helps students and early-career builders turn questions into practical next steps.
 
-Responding to inquiries logically and smoothly
+Career Copilot is a portfolio-ready Flask application built around a clear product goal: make AI guidance useful, inspectable, and measurable. Instead of presenting a black-box demo, the project exposes the reasoning signals behind each response through intent classification, confidence, sentiment, persistent conversation history, and user feedback analytics.
 
-Utilizing machine learning and NLP techniques to enhance language and context understanding
+## Why this project matters
 
-🧠 Technologies Used
-Technology              Usage
-Python                  Primary programming language
-scikit-learn            Simple machine learning models
-transformers            Utilizing advanced models like BERT or DistilBERT
-torch                   For training or using models
-Flask                   Simple API interface for bot interaction
-pandas & numpy          Data analysis and preparation
+The project demonstrates a complete product workflow rather than a single chatbot endpoint. A user can ask a question in English or Arabic, receive a topic-aware response, inspect the detected intent and confidence, rate the answer, and review quality metrics. The design is intentionally lightweight and offline-friendly, making it simple to run locally while leaving clean integration points for a hosted LLM, a translation provider, authentication, or a production database.
 
+## Product capabilities
 
+| Capability | Implementation |
+| --- | --- |
+| Bilingual interaction | English and Arabic responses with automatic language detection |
+| Explainable responses | Intent label, confidence score, and sentiment signal returned for every message |
+| Persistent history | SQLite by default with SQLAlchemy models and indexed conversation queries |
+| Feedback loop | Helpful / needs-work ratings with upsert behavior and satisfaction rate |
+| Analytics | Message totals, intent breakdown, feedback totals, and satisfaction rate |
+| Professional UI | Responsive dashboard, dark mode, suggestions, status indicators, and RTL support |
+| API-first design | Health, metadata, suggestions, chat, history, analytics, feedback, and translation endpoints |
+| Real-time readiness | Flask-SocketIO connection events included for future streaming responses |
+| Quality assurance | Pytest integration tests for core flows and validation behavior |
 
-⚙️ How to Run Locally
-1-Clone the repository:
+## Architecture
+
+```text
+Browser UI
+   │
+   ├── REST API /api/chat, /api/feedback, /api/analytics
+   ├── Optional Socket.IO connection events
+   │
+Flask application
+   ├── LanguageService: detection and controlled phrase translation
+   ├── ChatbotService: intent classification, confidence, sentiment, response policy
+   └── SQLAlchemy models: users, conversations, feedback, training data
+   │
+SQLite by default (PostgreSQL-compatible configuration supported)
+```
+
+The response engine is deliberately explainable. It uses normalized phrase matching for the current offline demo and returns a `ChatResult` object with `response`, `intent`, `confidence`, and `sentiment`. This separation makes it straightforward to replace or augment the engine with embeddings or a hosted generative model without rewriting the API or frontend.
+
+## Quick start
+
+```bash
 git clone https://github.com/tahadeab/graduation-ai-chatbot.git
-2-Navigate to the project directory:
 cd graduation-ai-chatbot
-3-Install dependencies:
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
-4-Run the application:
+cp env.example .env             # optional; defaults work for local development
 python app.py
+```
 
-After running the application, open your web browser and navigate to:
+Open [http://localhost:5000](http://localhost:5000) in a browser. The default database is created automatically as `career_copilot.db`.
 
-http://localhost:5000
+## API examples
 
-🗂️ Project Structure
-├── app.py              # Main entry point for the bot, handling web requests and bot interaction.
-├── model/              # Directory to store trained NLP models and any associated artifacts.
-├── chatbot.py          # Contains the core logic and functions for the conversational agent.
-├── requirements.txt    # Lists all necessary Python libraries and their versions for the project.
-├── README.md           # This comprehensive documentation file.
-└── LICENSE.md          # Details the licensing terms for this project.
+Send a message:
 
-🌍 Project Features
-Supports two languages: Arabic + English
+```bash
+curl -X POST http://localhost:5000/api/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{"message":"How can I improve my CV?","user_id":"demo-user","language":"en"}'
+```
 
-Extensible for adding new skills (intents)
+The response contains the assistant answer, detected intent, confidence, sentiment, conversation ID, language, and timestamp. History is available at `/api/conversations/<user_id>`, while personal analytics are available at `/api/analytics/<user_id>`.
 
-Easily integratable into websites or mobile applications
+## Testing and code quality
 
-Relies on advanced linguistic understanding techniques
+Run the automated suite with:
 
-🎯 Future Goals
-Improve Sentiment Analysis capabilities
+```bash
+pytest -q
+python -m py_compile app.py src/database/models.py src/services/chatbot_service.py src/services/language_service.py
+black --check app.py src tests
+flake8 app.py src tests
+```
 
-Support local dialects
+## Configuration
 
-Deploy the final version to a real website/application
+The application reads environment variables through `.env`. `DATABASE_URL` can point to PostgreSQL in a deployment environment; `SECRET_KEY`, `PORT`, `DEBUG`, `LOG_LEVEL`, and `CORS_ORIGINS` are also supported. Never commit real secrets to the repository.
 
-Use a database for personalized conversations
+## CV-ready project description
 
-Add voice conversation capabilities
+**Career Copilot — Explainable Bilingual AI Assistant:** Built and tested a Flask-based AI assistant with English/Arabic language detection, intent classification, confidence and sentiment signals, persistent SQLAlchemy conversation history, feedback-driven satisfaction analytics, responsive RTL-aware UI, REST endpoints, and automated pytest coverage.
 
-💬 Example:
-User: ما هو الذكاء الاصطناعي؟
-Bot: الذكاء الاصطناعي هو مجال في علوم الحاسوب يهدف إلى إنشاء أنظمة قادرة على تقليد السلوك البشري الذكي.
+## Roadmap
 
-User: What is AI?
-Bot: Artificial Intelligence is a branch of computer science that aims to create intelligent machines.
+The next production milestones are provider-backed generative responses with retrieval-augmented grounding, user authentication, database migrations, rate limiting, structured observability, and a multilingual evaluation dataset. These are intentionally documented as roadmap items rather than claimed features.
 
-👨‍💻 Developer
-Taha Deab
-IT Student - Passionate about learning and innovation
-🌐 GitHub: https://github.com/tahadeab
+## License
 
-🎓 Academic & Professional Readiness
-This project is a complete and robust solution, ideal for:
-
-.Your graduation thesis defense: Showcasing practical application of NLP and ML.
-
-.Applying to Master's programs: Demonstrating advanced technical skills and project management.
-
-.Enhancing your CV/Resume: A strong portfolio piece highlighting your expertise in AI and bilingual systems.
-
-
-🤝 Contributing
-Contributions are welcome! If you have suggestions for improvements or new features, please:
-
-1-Fork the repository.
-
-2-Create a new branch (git checkout -b feature/AmazingFeature).
-
-3-Commit your changes (git commit -m 'Add some AmazingFeature').
-
-4-Push to the branch (git push origin feature/AmazingFeature).
-
-5-Open a Pull Request
-
-📄 License
-This project is licensed under the MIT License - see the LICENSE.md file for details.
-
-📬 Contact
-If you like the project or have suggestions, feel free to reach out! 👋
-tahadeab201@gmail.com
+This project is released under the MIT License. See [LICENSE.md](LICENSE.md).

@@ -49,23 +49,15 @@ def test_database_setup():
             
             # Clean up test database
             db.drop_all()
-            print("✅ Test database cleaned up successfully!")
-            
-        return True
-        
+            print("Test database cleaned up successfully!")
+
     except Exception as e:
-        print(f"❌ Error testing database setup: {str(e)}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Database setup failed: {e}") from e
 
 if __name__ == "__main__":
     print("Testing Flask-SQLAlchemy setup...")
-    success = test_database_setup()
-    
-    if success:
-        print("\n🎉 All tests passed! Flask-SQLAlchemy setup is working correctly.")
-        sys.exit(0)
-    else:
-        print("\n💥 Tests failed! Please check the error messages above.")
-        sys.exit(1) 
+    test_database_setup()
+    print("\nAll tests passed! Flask-SQLAlchemy setup is working correctly.")
+    sys.exit(0)
