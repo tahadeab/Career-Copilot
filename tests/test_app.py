@@ -4,7 +4,9 @@ os.environ["SECRET_KEY"] = "test-secret"
 
 import pytest
 
+import app as app_module
 from app import app, db
+from src.database.models import PasswordResetToken
 
 
 @pytest.fixture()
@@ -82,3 +84,56 @@ def test_feedback_and_arabic_chat(client):
     analytics = client.get("/api/analytics").get_json()
     assert analytics["total_messages"] == 1
     assert analytics["satisfaction_rate"] == 1.0
+
+
+def test_password_reset_is_single_use_and_updates_password(client, monkeypatch):
+    register(client, "reset@example.com")
+    captured = {}
+
+    def fake_send(user, raw_token):
+        captured["token"] = raw_token
+        return False
+
+    monkeypatch.setattr(app_module, "send_reset_email", fake_send)
+    request = client.post("/api/auth/request-reset", json={"email": "reset@example.com"})
+    assert request.status_code == 202
+    assert "token" in captured
+    with app.app_context():
+        stored = PasswordResetToken.query.one()
+        assert stored.token_hash != captured["token"]
+
+    reset = client.post("/api/auth/reset-password", json={"token": captured["token"], "password": "new-strong-pass-123", "confirm_password": "new-strong-pass-123"})
+    assert reset.status_code == 200
+    client.post("/api/auth/logout")
+    assert login(client, "reset@example.com", "strong-pass-123").status_code == 401
+    assert login(client, "reset@example.com", "new-strong-pass-123").status_code == 200
+    assert client.post("/api/auth/reset-password", json={"token": captured["token"], "password": "another-pass-123", "confirm_password": "another-pass-123"}).status_code == 400
+
+
+def test_reset_request_does_not_enumerate_accounts(client):
+    existing = client.post("/api/auth/request-reset", json={"email": "existing@example.com"})
+    missing = client.post("/api/auth/request-reset", json={"email": "missing@example.com"})
+    assert existing.status_code == missing.status_code == 202
+    assert existing.get_json() == missing.get_json()
+
+
+def test_advanced_dashboard_returns_user_scoped_time_series(client):
+    register(client, "dashboard@example.com")
+    client.post("/api/chat", json={"message": "How do I prepare for an interview?", "language": "en"})
+    dashboard = client.get("/api/analytics/dashboard?days=7")
+    data = dashboard.get_json()
+    assert dashboard.status_code == 200
+    assert data["period_days"] == 7
+    assert data["total_messages"] == 1
+    assert data["active_days"] == 1
+    assert data["top_intent"] == "career"
+    assert data["intent_breakdown"]["career"] == 1
+    assert len(data["daily_activity"]) == 1
+
+
+def test_google_oauth_requires_configuration(client, monkeypatch):
+    monkeypatch.delenv("GOOGLE_CLIENT_ID", raising=False)
+    monkeypatch.delenv("GOOGLE_CLIENT_SECRET", raising=False)
+    response = client.get("/api/auth/google")
+    assert response.status_code == 503
+    assert "not configured" in response.get_json()["error"]

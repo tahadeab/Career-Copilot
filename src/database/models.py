@@ -20,22 +20,42 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=True, index=True)
     display_name = db.Column(db.String(120), nullable=True)
     password_hash = db.Column(db.String(255), nullable=True)
+    auth_provider = db.Column(db.String(30), default="local", nullable=False)
+    google_sub = db.Column(db.String(255), unique=True, nullable=True, index=True)
+    last_login_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    login_count = db.Column(db.Integer, default=0, nullable=False)
     language_preference = db.Column(db.String(10), default="en", nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     conversations = db.relationship("Conversation", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     feedbacks = db.relationship("Feedback", backref="user", lazy="dynamic", cascade="all, delete-orphan")
+    password_reset_tokens = db.relationship("PasswordResetToken", backref="user", lazy="dynamic", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
             "id": self.id,
             "email": self.email,
             "display_name": self.display_name,
+            "auth_provider": self.auth_provider,
             "language_preference": self.language_preference,
+            "login_count": self.login_count,
+            "last_login_at": self.last_login_at.isoformat() if self.last_login_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (db.Index("ix_password_reset_user_expires", "user_id", "expires_at"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(100), db.ForeignKey("users.id"), nullable=False)
+    token_hash = db.Column(db.String(128), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    used_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
 
 class Conversation(db.Model):

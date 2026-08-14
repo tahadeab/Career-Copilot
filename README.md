@@ -1,111 +1,137 @@
 # Career Copilot
 
-> An explainable bilingual AI assistant that helps students and early-career builders turn questions into practical next steps.
+> An explainable bilingual career-guidance assistant that helps students and early-career builders turn questions into practical next steps.
 
-Career Copilot is a portfolio-ready Flask application built around a clear product goal: make AI guidance useful, inspectable, and measurable. Instead of presenting a black-box demo, the project exposes the reasoning signals behind each response through intent classification, confidence, sentiment, persistent conversation history, and user feedback analytics.
-
-## Why this project matters
-
-The project demonstrates a complete product workflow rather than a single chatbot endpoint. A user can ask a question in English or Arabic, receive a topic-aware response, inspect the detected intent and confidence, rate the answer, and review quality metrics. The design is intentionally lightweight and offline-friendly, making it simple to run locally while leaving clean integration points for a hosted LLM, a translation provider, authentication, or a production database.
+Career Copilot is a portfolio-ready Flask application for private, measurable career guidance. Users can create an account, sign in with a password or Google, ask questions in English or Arabic, inspect intent and confidence signals, rate responses, recover their password through email, and review a personal analytics dashboard.
 
 ## Product capabilities
 
 | Capability | Implementation |
 | --- | --- |
-| Bilingual interaction | English and Arabic responses with automatic language detection |
+| Private accounts | SQLAlchemy-backed users with server-side HttpOnly sessions and user-scoped data access |
+| Password security | Werkzeug one-way password hashes, minimum password policy, single-use reset tokens hashed in the database |
+| External identity | Optional Google OAuth 2.0 authorization-code flow with state validation and verified email identity |
+| Bilingual guidance | English and Arabic responses with automatic language detection, RTL support, and controlled translation |
 | Explainable responses | Intent label, confidence score, and sentiment signal returned for every message |
-| Persistent history | SQLite by default with SQLAlchemy models and indexed conversation queries |
-| Feedback loop | Helpful / needs-work ratings with upsert behavior and satisfaction rate |
-| Analytics | Message totals, intent breakdown, feedback totals, and satisfaction rate |
-| Professional UI | Responsive dashboard, dark mode, suggestions, status indicators, and RTL support |
-| API-first design | Health, metadata, suggestions, chat, history, analytics, feedback, and translation endpoints |
-| Real-time readiness | Flask-SocketIO connection events included for future streaming responses |
-| Quality assurance | Pytest integration tests for core flows and validation behavior |
+| Advanced analytics | Period selector, message volume, active days, average confidence, top intent, intent mix, language mix, feedback, and daily/hourly activity |
+| Feedback loop | Helpful / needs-work ratings with ownership checks and satisfaction rate |
+| Professional UI | Responsive workspace, dashboard cards, inline charts, dark mode, suggestions, and account controls |
+| API-first design | Health, metadata, authentication, recovery, Google OAuth, chat, history, analytics, feedback, and translation endpoints |
+| Quality assurance | Ten integration tests covering auth, ownership isolation, reset tokens, analytics, validation, and OAuth configuration |
 
 ## Architecture
 
 ```text
 Browser UI
    │
-   ├── REST API /api/chat, /api/feedback, /api/analytics
-   ├── Optional Socket.IO connection events
-   │
+   ├── Authentication UI: local login, password reset, Google OAuth redirect
+   ├── Private chat workspace and analytics dashboard
+   └── REST API requests with an HttpOnly session cookie
+
 Flask application
-   ├── LanguageService: detection and controlled phrase translation
+   ├── Auth flows: local credentials, reset tokens, Google authorization-code callback
    ├── ChatbotService: intent classification, confidence, sentiment, response policy
-   └── SQLAlchemy models: users, conversations, feedback, training data
+   ├── Analytics service: user-scoped time-series and quality metrics
+   └── SQLAlchemy models: users, reset tokens, conversations, feedback, training data
    │
-SQLite by default (PostgreSQL-compatible configuration supported)
+SQLite by default (PostgreSQL-compatible DATABASE_URL supported)
 ```
 
-The response engine is deliberately explainable. It uses normalized phrase matching for the current offline demo and returns a `ChatResult` object with `response`, `intent`, `confidence`, and `sentiment`. This separation makes it straightforward to replace or augment the engine with embeddings or a hosted generative model without rewriting the API or frontend.
+The current response engine is deliberately explainable and offline-friendly. It uses normalized phrase matching and returns a `ChatResult` with `response`, `intent`, `confidence`, and `sentiment`. A hosted LLM or RAG layer can be added behind the same service boundary later.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/tahadeab/graduation-ai-chatbot.git
-cd graduation-ai-chatbot
+git clone https://github.com/tahadeab/Career-Copilot.git
+cd Career-Copilot
 python -m venv .venv
 source .venv/bin/activate       # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
-cp env.example .env             # optional; defaults work for local development
+cp env.example .env
 python app.py
 ```
 
-Open [http://localhost:5000](http://localhost:5000) in a browser. The default database is created automatically as `career_copilot.db`.
+Open [http://localhost:5000](http://localhost:5000). The default SQLite database is created automatically as `career_copilot.db`.
 
-## API examples
+## Authentication and password recovery
 
-Send a message:
-
-```bash
-curl -X POST http://localhost:5000/api/chat \\
-  -H "Content-Type: application/json" \\
-  -d '{"message":"How can I improve my CV?","user_id":"demo-user","language":"en"}'
-```
-
-The response contains the assistant answer, detected intent, confidence, sentiment, conversation ID, language, and timestamp. History is available at `/api/conversations/<user_id>`, while personal analytics are available at `/api/analytics/<user_id>`.
-
-## Testing and code quality
-
-Run the automated suite with:
-
-```bash
-pytest -q
-python -m py_compile app.py src/database/models.py src/services/chatbot_service.py src/services/language_service.py
-black --check app.py src tests
-flake8 app.py src tests
-```
-
-## Configuration
-
-The application reads environment variables through `.env`. `DATABASE_URL` can point to PostgreSQL in a deployment environment; `SECRET_KEY`, `PORT`, `DEBUG`, `LOG_LEVEL`, and `CORS_ORIGINS` are also supported. Never commit real secrets to the repository.
-
-## CV-ready project description
-
-**Career Copilot — Explainable Bilingual AI Assistant:** Built and tested a Flask-based AI assistant with English/Arabic language detection, intent classification, confidence and sentiment signals, persistent SQLAlchemy conversation history, feedback-driven satisfaction analytics, responsive RTL-aware UI, REST endpoints, and automated pytest coverage.
-
-## Roadmap
-
-The next production milestones are provider-backed generative responses with retrieval-augmented grounding, user authentication, database migrations, rate limiting, structured observability, and a multilingual evaluation dataset. These are intentionally documented as roadmap items rather than claimed features.
-
-## License
-
-This project is released under the MIT License. See [LICENSE.md](LICENSE.md).
-
-## Authentication and private history
-
-Career Copilot now includes account authentication backed by the application database. Users can create an account, sign in, sign out, and inspect their active session through the following endpoints:
+Local registration and login are available through the following endpoints:
 
 | Endpoint | Purpose | Access |
 | --- | --- | --- |
 | `POST /api/auth/register` | Create an account with email, display name, and password | Public |
 | `POST /api/auth/login` | Start a secure server-side session | Public |
-| `POST /api/auth/logout` | Clear the current session | Authenticated |
+| `POST /api/auth/logout` | Clear the current session | Public |
 | `GET /api/auth/me` | Return the current authenticated user | Authenticated |
-| `GET /api/conversations` | Return only the signed-in user's history | Authenticated |
-| `GET /api/analytics` | Return only the signed-in user's metrics | Authenticated |
+| `POST /api/auth/request-reset` | Request a reset email with a generic anti-enumeration response | Public |
+| `POST /api/auth/reset-password` | Consume a single-use, 30-minute reset token | Public |
 
-Passwords are stored with Werkzeug's one-way password hashing utilities and are never returned by the API. The browser uses an `HttpOnly`, `SameSite=Lax` session cookie. Chat, conversation history, feedback, and analytics endpoints derive the user identity from the server session instead of trusting a client-supplied `user_id`. This prevents one account from reading or rating another account's conversations.
+Reset tokens are generated with the Python secrets module, stored as SHA-256 hashes, expire after 30 minutes, and are marked as used after a successful reset. SMTP is optional for local development; without SMTP configuration, the reset URL is written to the application log rather than sent over email.
 
-For deployments behind HTTPS, set `SESSION_COOKIE_SECURE=true` and provide a strong random `SECRET_KEY` through the environment. Existing SQLite databases are upgraded with the authentication columns when the application starts; production deployments should still use a dedicated migration tool as the schema evolves.
+## Google OAuth setup
+
+Create a Web application OAuth client in Google Cloud Console and add this exact redirect URI:
+
+```text
+http://localhost:5000/api/auth/google/callback
+```
+
+Then configure the environment:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+```
+
+The application requests only `openid email profile`, creates or links the verified Google identity, validates the OAuth `state` value, and does not store Google access tokens. In production, use HTTPS, a strong secret key, exact production redirect URIs, and a managed secrets service.
+
+## SMTP setup
+
+For real password-reset delivery, configure an SMTP provider without committing credentials:
+
+```bash
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-username
+SMTP_PASSWORD=your-smtp-password
+MAIL_FROM=no-reply@example.com
+APP_BASE_URL=https://your-domain.example
+```
+
+## Analytics API
+
+`GET /api/analytics/dashboard?days=30` returns the signed-in user's analytics for a period from 1 to 90 days. The response includes total messages, active days, average confidence, feedback totals, satisfaction rate, intent and language breakdowns, daily activity, hourly activity, and the top intent. The endpoint never accepts a user ID from the client and derives ownership from the current server session.
+
+## Other API examples
+
+```bash
+# Health
+curl http://localhost:5000/api/health
+
+# Authenticated chat: use a browser session or a cookie jar after login
+curl -X POST http://localhost:5000/api/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{"message":"How can I improve my CV?","language":"en"}'
+```
+
+## Testing and code quality
+
+```bash
+pytest -q
+python -m py_compile app.py src/database/models.py
+```
+
+The automated suite validates account creation, password hashing behavior, session protection, conversation ownership isolation, feedback ownership, reset-token single use, generic reset responses, dashboard time series, Arabic detection, and disabled Google OAuth configuration. A production deployment should also add CSRF protection for cross-origin state-changing requests, rate limiting for login and reset endpoints, HTTPS, and a formal migration tool.
+
+## CV-ready project description
+
+**Career Copilot — Secure Explainable Career Guidance Platform:** Built and tested a Flask-based bilingual career assistant with SQLAlchemy user isolation, secure password hashing and single-use email recovery tokens, optional Google OAuth 2.0, explainable intent and confidence signals, user-scoped analytics dashboards, feedback-based satisfaction metrics, responsive RTL-aware UI, REST APIs, and automated integration tests.
+
+## References
+
+The OAuth implementation follows Google's server-side web application authorization-code guidance: [Google OAuth 2.0 for Web Server Applications](https://developers.google.com/identity/protocols/oauth2/web-server). Password recovery design follows [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
+
+## License
+
+This project is released under the MIT License. See [LICENSE.md](LICENSE.md).
