@@ -1,372 +1,110 @@
-# 🤖 Smart AI Chatbot System - Complete Project Overview
+# Career Copilot — Project Overview
 
-## 📋 Project Summary
+## Product definition
 
-This is a comprehensive **Smart AI Chatbot system** that is **bilingual (Arabic and English)**, **self-learning**, and powered by **NLP**, **machine learning**, and **feedback-driven continuous training**. The system provides an intelligent conversational AI that can understand, respond, and learn from user interactions in both languages.
+Career Copilot is a bilingual English/Arabic career-guidance assistant built for students, graduation-project teams, and early-career developers. It converts questions about learning, CVs, interviews, portfolios, and project planning into structured next steps while exposing intent, confidence, and sentiment signals for explainability.
 
-## 🏗️ System Architecture
+The application is intentionally designed as a portfolio-quality foundation. The current response engine is deterministic and offline-friendly, which makes local demonstrations reliable and keeps the product honest about which external AI services are configured. A hosted LLM or retrieval system can be added later behind the existing service boundary.
 
-### Frontend Layer
-- **Modern Web Interface** with real-time messaging
-- **Bilingual Support** (Arabic/English) with language switching
-- **Responsive Design** using Bootstrap 5
-- **Real-time Communication** via WebSocket
-- **Dark/Light Mode** toggle
-- **Conversation History** sidebar
-- **Feedback System** with rating buttons
-- **Loading Indicators** and typing animations
+## Current capabilities
 
-### Backend API Layer
-- **Flask REST API** with WebSocket support
-- **Modular Service Architecture**
-- **Database Integration** with SQLAlchemy
-- **Real-time Chat** via SocketIO
-- **Authentication & User Management**
-- **Comprehensive Logging** system
+| Area | Implemented behavior |
+| --- | --- |
+| Conversation guidance | Classifies common career and learning intents and generates bilingual policy-based responses |
+| Explainability | Returns intent, confidence, and sentiment signals with every response |
+| User accounts | Local registration, login, logout, and authenticated sessions |
+| Private data | Conversations, feedback, and analytics are scoped to the authenticated user |
+| Password recovery | Hashed, single-use, expiring reset tokens with SMTP or development-log delivery |
+| External identity | Optional Google OAuth 2.0 authorization-code flow with state validation |
+| Analytics | User-scoped volume, quality, distribution, and time-series dashboard data |
+| Feedback | Helpful/needs-work ratings and comments with ownership checks |
+| Interface | Responsive English-first UI, Arabic support, RTL handling, dark mode, suggestions, history, and dashboard charts |
+| API | Flask JSON endpoints for platform, auth, recovery, OAuth, chat, history, feedback, analytics, and translation |
 
-### Database Layer
-- **SQLAlchemy ORM** with multiple models
-- **User Management** with preferences
-- **Conversation Storage** with metadata
-- **Feedback Collection** and analysis
-- **Training Data** management
-- **Model Versioning** tracking
-- **Embedding Cache** for performance
+## Architecture summary
 
-### AI/ML Layer
-- **Hybrid Architecture**: Generative + Retrieval models
-- **Intent Classification** using ML and rule-based methods
-- **Sentiment Analysis** for emotion detection
-- **Language Detection** and translation
-- **Semantic Search** using FAISS and sentence transformers
-- **Continuous Learning** pipeline
+```text
+Browser UI
+  → Flask routes and session guard
+  → ChatbotService / LanguageService / FeedbackService
+  → SQLAlchemy models and relational database
 
-## 🎯 Core Features
-
-### 1. Bilingual Communication
-- **Arabic & English** language support
-- **Automatic Language Detection**
-- **Real-time Translation** between languages
-- **Cultural Context Awareness**
-- **RTL/LTR** text direction support
-
-### 2. Intelligent Response Generation
-- **Hybrid AI Approach**: Combines retrieval and generative models
-- **Context-Aware Responses** based on conversation history
-- **Intent Recognition** for better understanding
-- **Sentiment Analysis** for emotional intelligence
-- **Fallback Mechanisms** for robust performance
-
-### 3. Self-Learning Capabilities
-- **Feedback-Driven Training** from user ratings
-- **Continuous Model Improvement** pipeline
-- **Data Classification** and preprocessing
-- **Training Data Generation** from high-quality conversations
-- **Model Versioning** and deployment management
-
-### 4. User Experience Features
-- **Real-time Chat** with WebSocket
-- **Message Timestamps** and conversation flow
-- **Typing Indicators** and loading states
-- **Conversation History** with search
-- **Quick Action Buttons** for common queries
-- **Responsive Design** for all devices
-
-## 📁 Project Structure
-
+Optional boundaries:
+  SMTP for recovery email
+  Google OAuth 2.0 for external identity
 ```
-Smart-AI-Chatbot/
-├── app.py                          # Main Flask application
-├── requirements.txt                # Python dependencies
-├── README.md                       # Project documentation
-├── LICENSE.md                      # License information
-├── PROJECT_OVERVIEW.md             # This comprehensive overview
-├── templates/
-│   └── index.html                  # Main chat interface (875 lines)
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for request flows, data ownership, database relationships, security boundaries, and deployment guidance.
+
+## Repository structure
+
+```text
+Career-Copilot/
+├── app.py                         Flask application and API routes
+├── config.py                      Environment and runtime configuration
+├── requirements.txt               Runtime and test dependencies
+├── env.example                    Safe configuration template
+├── Dockerfile                     Container starting point
+├── docker-compose.yml             Local container orchestration
+├── README.md                      Primary project documentation
+├── ARCHITECTURE.md                Current architecture source of truth
+├── SETUP.md                       Local and production-oriented setup guide
+├── DATABASE_REFACTOR.md           Historical database refactor notes
+├── LICENSE.md                     MIT license
 ├── src/
-│   ├── database/
-│   │   └── models.py               # SQLAlchemy database models
-│   ├── services/
-│   │   ├── chatbot_service.py      # Main AI orchestration (371 lines)
-│   │   ├── language_service.py     # Language processing (336 lines)
-│   │   ├── retrieval_service.py    # Semantic search (345 lines)
-│   │   ├── generative_service.py   # Response generation (360 lines)
-│   │   ├── feedback_service.py     # Feedback processing (349 lines)
-│   │   └── training_service.py     # ML pipeline (477 lines)
-│   └── utils/
-│       ├── text_preprocessing.py   # Text cleaning & normalization (363 lines)
-│       ├── intent_classifier.py    # Intent recognition (403 lines)
-│       ├── sentiment_analyzer.py   # Emotion analysis (423 lines)
-│       └── logger.py               # Comprehensive logging (448 lines)
-└── venv/                          # Virtual environment
+│   ├── database/models.py         SQLAlchemy entities and relationships
+│   ├── services/chatbot_service.py Explainable response engine
+│   ├── services/language_service.py Language detection and translation boundary
+│   ├── services/feedback_service.py Feedback helpers
+│   ├── services/training_service.py Training-data helper boundary
+│   └── utils/logger.py             Application logging
+├── templates/index.html            Frontend workspace
+├── tests/test_app.py               Integration and ownership tests
+├── test_db_setup.py                Database initialization test
+├── docs/                           Security research and presentation outline
+└── presentation/                   Editable slide project
 ```
 
-## 🔧 Technical Implementation
+## Data model
 
-### Database Models (135 lines)
-- **User**: User management with language preferences
-- **Conversation**: Chat messages with metadata and analysis
-- **Feedback**: User ratings and comments for learning
-- **TrainingData**: High-quality data for model improvement
-- **ModelVersion**: ML model versioning and tracking
-- **EmbeddingCache**: Performance optimization for embeddings
+The relational model is intentionally compact and focused on product behavior.
 
-### Core Services
+| Model | Role |
+| --- | --- |
+| `User` | Stores local identity, optional Google identity, language preference, and login metadata |
+| `PasswordResetToken` | Stores only a hash of a time-limited, single-use recovery token |
+| `Conversation` | Stores a user's message, response, language, intent, confidence, sentiment, and timestamp |
+| `Feedback` | Stores a user's rating and optional comment for their conversation |
+| `TrainingData` | Stores curated text examples for future feedback/training workflows |
 
-#### 1. ChatbotService (371 lines)
-- **Message Processing** pipeline
-- **Intent Classification** and routing
-- **Response Generation** orchestration
-- **Fallback Mechanisms** for robustness
-- **Conversation Context** management
+## Main API groups
 
-#### 2. LanguageService (336 lines)
-- **Language Detection** using langdetect
-- **Translation** with Google Translator
-- **Text Normalization** for Arabic and English
-- **Keyword Extraction** and processing
-- **Cultural Context** handling
+| Group | Endpoints |
+| --- | --- |
+| Platform | `/api/health`, `/api/meta`, `/api/suggestions` |
+| Authentication | `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` |
+| Recovery | `/api/auth/request-reset`, `/api/auth/reset-password` |
+| Google | `/api/auth/google`, `/api/auth/google/callback` |
+| Private workspace | `/api/chat`, `/api/conversations`, `/api/feedback`, `/api/analytics/dashboard` |
+| Language | `/api/translate` |
 
-#### 3. RetrievalService (345 lines)
-- **Semantic Search** using sentence-transformers
-- **FAISS Vector Database** for similarity search
-- **Knowledge Base** management
-- **Response Ranking** and selection
-- **Cache Management** for performance
+## Quality status
 
-#### 4. GenerativeService (360 lines)
-- **Transformer Models** (DialoGPT) for response generation
-- **Context-Aware Generation** with conversation history
-- **Template-Based Fallbacks** for Arabic
-- **Response Quality** assessment
-- **Error Handling** and recovery
+The automated suite covers registration, password hashing, login protection, private conversation history, feedback ownership, reset-token behavior, analytics periods and series, Arabic detection, and disabled Google OAuth configuration. Run `pytest -q` before submitting a change.
 
-#### 5. FeedbackService (349 lines)
-- **Feedback Processing** and analysis
-- **Quality Assessment** of responses
-- **Learning Data** preparation
-- **Statistics** and recommendations
-- **Continuous Improvement** tracking
+## Deliberate non-features
 
-#### 6. TrainingService (477 lines)
-- **ML Pipeline** management
-- **Data Preparation** and cleaning
-- **Model Training** for intent and sentiment
-- **Knowledge Base** updates
-- **Evaluation** and deployment
+The repository does not currently ship a FAISS index, sentence-transformer model, DialoGPT model, Socket.IO event protocol, or production-grade background training scheduler. Those ideas may appear in historical documents from the original chatbot prototype, but they are not part of the current runtime and must not be presented as implemented capabilities.
 
-### Utility Modules
+## Professional value
 
-#### 1. TextPreprocessor (363 lines)
-- **Text Cleaning** and normalization
-- **Tokenization** for Arabic and English
-- **Stop Word Removal** and stemming
-- **Special Character** handling
-- **Language-Specific** processing
+This project demonstrates full-stack Python development, secure authentication, database ownership controls, third-party OAuth integration, email recovery, explainable conversational logic, analytics design, frontend integration, API design, testing, and technical documentation in a single coherent product.
 
-#### 2. IntentClassifier (403 lines)
-- **Rule-Based Classification** for common intents
-- **ML-Based Classification** using trained models
-- **Training Pipeline** for custom intents
-- **Confidence Scoring** and fallbacks
-- **Model Persistence** and loading
+## References
 
-#### 3. SentimentAnalyzer (423 lines)
-- **Sentiment Analysis** using ML models
-- **Emotion Detection** for better responses
-- **Lexicon-Based Analysis** for Arabic
-- **Multi-Language Support** for sentiment
-- **Confidence Metrics** and validation
+1. [Google OAuth 2.0 for Web Server Applications](https://developers.google.com/identity/protocols/oauth2/web-server)
+2. [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
 
-#### 4. Logger (448 lines)
-- **Comprehensive Logging** system
-- **Multiple Log Levels** and categories
-- **Performance Metrics** tracking
-- **Error Monitoring** and alerting
-- **Log Rotation** and cleanup
+## License
 
-## 🚀 Key Technologies Used
-
-### Core Technologies
-- **Python 3.8+** - Primary programming language
-- **Flask 2.3.2** - Web framework and API
-- **SQLAlchemy 2.0.19** - Database ORM
-- **SocketIO 5.3.4** - Real-time communication
-
-### AI/ML Technologies
-- **Transformers 4.30.2** - Hugging Face models
-- **PyTorch 2.0.1** - Deep learning framework
-- **scikit-learn 1.3.0** - Machine learning algorithms
-- **sentence-transformers 2.2.2** - Semantic embeddings
-- **FAISS 1.7.4** - Vector similarity search
-- **NLTK 3.8.1** - Natural language processing
-- **spaCy 3.6.0** - Advanced NLP
-
-### Language Processing
-- **langdetect 1.0.9** - Language detection
-- **deep-translator 1.11.2** - Translation services
-- **arabert 0.1.0** - Arabic BERT models
-
-### Frontend Technologies
-- **Bootstrap 5.1.3** - Responsive UI framework
-- **Font Awesome 6.0.0** - Icons and UI elements
-- **Google Fonts** - Typography (Inter font)
-- **JavaScript ES6+** - Frontend interactivity
-
-## 🎨 User Interface Features
-
-### Modern Design
-- **Gradient Backgrounds** and modern styling
-- **Smooth Animations** and transitions
-- **Responsive Layout** for all screen sizes
-- **Professional Typography** with Inter font
-- **Consistent Color Scheme** with CSS variables
-
-### Interactive Elements
-- **Language Switching** with smooth transitions
-- **Dark/Light Mode** toggle with persistent storage
-- **Real-time Chat** with WebSocket connection
-- **Message Avatars** and timestamps
-- **Feedback Buttons** for response quality
-- **Conversation History** sidebar with search
-- **Typing Indicators** and loading states
-
-### Accessibility Features
-- **Keyboard Navigation** support
-- **Screen Reader** compatibility
-- **High Contrast** mode support
-- **Responsive Design** for mobile devices
-- **RTL/LTR** text direction support
-
-## 🔄 Machine Learning Pipeline
-
-### 1. Data Collection
-- **User Conversations** with metadata
-- **Feedback Ratings** and comments
-- **Quality Metrics** and performance data
-- **Error Logs** and failure cases
-
-### 2. Data Preprocessing
-- **Text Cleaning** and normalization
-- **Language Detection** and separation
-- **Intent Classification** labeling
-- **Sentiment Analysis** annotation
-
-### 3. Model Training
-- **Intent Classifier** training with new data
-- **Sentiment Analyzer** fine-tuning
-- **Knowledge Base** updates with new Q&A pairs
-- **Embedding Model** retraining if needed
-
-### 4. Evaluation & Deployment
-- **Model Performance** assessment
-- **A/B Testing** for new models
-- **Gradual Rollout** to users
-- **Rollback Mechanisms** for failed deployments
-
-## 📊 Performance Metrics
-
-### Response Quality
-- **Response Time** < 2 seconds average
-- **Accuracy Rate** > 85% for intent classification
-- **User Satisfaction** > 4.0/5.0 rating
-- **Translation Quality** > 90% accuracy
-
-### System Performance
-- **Concurrent Users** support for 100+ users
-- **Database Response** < 100ms average
-- **Memory Usage** optimized for production
-- **Error Rate** < 1% for critical operations
-
-### Learning Metrics
-- **Training Data** growth rate
-- **Model Improvement** tracking
-- **Feedback Collection** rate
-- **Knowledge Base** expansion metrics
-
-## 🔒 Security & Privacy
-
-### Data Protection
-- **User Data** encryption at rest
-- **Secure Communication** with HTTPS
-- **Input Validation** and sanitization
-- **SQL Injection** prevention
-
-### Privacy Features
-- **Anonymous User** support
-- **Data Retention** policies
-- **GDPR Compliance** ready
-- **User Consent** management
-
-## 🚀 Deployment & Scaling
-
-### Development Setup
-```bash
-# Clone repository
-git clone https://github.com/tahadeab/graduation-ai-chatbot.git
-cd graduation-ai-chatbot
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run application
-python app.py
-```
-
-### Production Deployment
-- **Docker Containerization** ready
-- **Load Balancer** support
-- **Database Scaling** with connection pooling
-- **Caching Layer** for performance
-- **Monitoring** and alerting setup
-
-## 🎓 Academic & Professional Value
-
-### Graduation Project Benefits
-- **Complete Solution** showcasing full-stack development
-- **Advanced AI/ML** implementation
-- **Bilingual System** demonstrating language processing
-- **Self-Learning** capabilities showing innovation
-- **Production-Ready** code quality
-
-### Career Enhancement
-- **Portfolio Piece** for job applications
-- **Technical Skills** demonstration
-- **Project Management** experience
-- **Research & Innovation** showcase
-- **Industry-Relevant** technologies
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- **Voice Conversation** capabilities
-- **Multi-Modal** input (text, voice, images)
-- **Advanced Analytics** dashboard
-- **API Integration** with external services
-- **Mobile Application** development
-
-### Technical Improvements
-- **Advanced NLP** models integration
-- **Real-time Translation** improvements
-- **Enhanced Security** features
-- **Performance Optimization** for scale
-- **Cloud Deployment** automation
-
-## 📞 Support & Contact
-
-### Developer Information
-- **Developer**: Taha Deab
-- **Email**: tahadeab201@gmail.com
-- **GitHub**: https://github.com/tahadeab
-- **Project**: IT Student Graduation Project
-
-### Contributing
-- **Open Source** project
-- **MIT License** for contributions
-- **Pull Request** workflow
-- **Issue Tracking** and bug reports
-- **Feature Request** submissions
-
----
-
-**This Smart AI Chatbot system represents a comprehensive, production-ready solution that demonstrates advanced AI/ML capabilities, bilingual support, self-learning mechanisms, and modern web development practices. It's an excellent showcase for academic projects, career development, and real-world applications.** 
+Career Copilot is distributed under the MIT License. See [LICENSE.md](LICENSE.md).

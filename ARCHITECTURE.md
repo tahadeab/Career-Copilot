@@ -1,412 +1,166 @@
-# 🏗️ Smart AI Chatbot - System Architecture
+# Career Copilot Architecture
 
-## 📊 High-Level Architecture Overview
+## 1. System purpose
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           FRONTEND LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │   Web Browser   │  │   Mobile App    │  │   API Clients   │             │
-│  │   (HTML/CSS/JS) │  │   (Future)      │  │   (Future)      │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│           │                     │                     │                     │
-│           └─────────────────────┼─────────────────────┘                     │
-│                                 │                                           │
-└─────────────────────────────────┼───────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        BACKEND API LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │   Flask App     │  │   SocketIO      │  │   REST API      │             │
-│  │   (app.py)      │  │   (Real-time)   │  │   (HTTP)        │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│           │                     │                     │                     │
-│           └─────────────────────┼─────────────────────┘                     │
-│                                 │                                           │
-└─────────────────────────────────┼───────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        SERVICE LAYER                                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │ ChatbotService  │  │ LanguageService │  │ RetrievalService│             │
-│  │   (Orchestrator)│  │   (Translation) │  │   (Semantic)    │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│           │                     │                     │                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │GenerativeService│  │FeedbackService  │  │TrainingService  │             │
-│  │   (AI Models)   │  │   (Learning)    │  │   (ML Pipeline) │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│                                 │                                           │
-└─────────────────────────────────┼───────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        UTILITY LAYER                                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │TextPreprocessor │  │IntentClassifier │  │SentimentAnalyzer│             │
-│  │   (Cleaning)    │  │   (Classification)│  │   (Emotion)    │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│                                 │                                           │
-│  ┌─────────────────┐                                                     │
-│  │     Logger      │                                                     │
-│  │   (Monitoring)  │                                                     │
-│  └─────────────────┘                                                     │
-└─────────────────────────────────┼───────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        DATA LAYER                                           │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │   SQLAlchemy    │  │   FAISS Index   │  │   File System   │             │
-│  │   (Database)    │  │   (Vectors)     │  │   (Models)      │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────┘
+Career Copilot is a Flask-based, bilingual career-guidance application. It provides explainable responses for learning, graduation-project, CV, interview, and portfolio questions. The current runtime is intentionally **offline-friendly and deterministic**: it classifies intent, detects language, estimates sentiment, and selects a response policy without pretending that an external generative model is configured.
+
+The platform also provides private accounts, password recovery, optional Google OAuth, user-owned conversation history, response feedback, and a user-scoped analytics dashboard.
+
+## 2. Runtime architecture
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Browser                                                      │
+│ templates/index.html                                         │
+│ Auth forms · Chat workspace · History · Analytics dashboard  │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ HTTP / JSON + session cookie
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Flask application: app.py                                   │
+│                                                              │
+│ Public endpoints                                              │
+│ health · meta · suggestions · auth register/login/reset      │
+│                                                              │
+│ Authenticated endpoints                                       │
+│ auth/me · logout · chat · conversations · feedback           │
+│ analytics/dashboard · translation                            │
+│                                                              │
+│ External auth endpoints                                       │
+│ Google OAuth authorize → callback                             │
+└───────────────┬──────────────────────────────┬───────────────┘
+                │                              │
+                ▼                              ▼
+┌───────────────────────────────┐  ┌───────────────────────────┐
+│ Domain services                │  │ External services         │
+│ ChatbotService                 │  │ SMTP: password recovery   │
+│ LanguageService                │  │ Google OAuth 2.0          │
+│ FeedbackService                │  │                           │
+│ TrainingService (data helper)  │  │ Optional; disabled safely │
+└───────────────┬───────────────┘  └───────────────────────────┘
+                │ SQLAlchemy ORM
+                ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Relational database                                          │
+│ SQLite by default; DATABASE_URL can point to PostgreSQL      │
+│ users · password_reset_tokens · conversations · feedback     │
+│ training_data                                                 │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-## 🔄 Data Flow Architecture
+## 3. Request and ownership flow
 
-### 1. User Input Processing Flow
+Every state-changing request is processed by Flask, validated as JSON, and then handled using the authenticated user stored in the server-side session. A client cannot select another user's identity by sending a different `user_id`; ownership is derived from `session["user_id"]`.
 
-```
-User Input → Language Detection → Text Preprocessing → Intent Classification
-     ↓              ↓                    ↓                    ↓
-WebSocket/HTTP → LanguageService → TextPreprocessor → IntentClassifier
-     ↓              ↓                    ↓                    ↓
-ChatbotService ← Response Generation ← Sentiment Analysis ← Context Analysis
-     ↓
-Database Storage
-```
-
-### 2. AI Response Generation Flow
-
-```
-Intent Classification → Route to Service → Generate Response → Quality Check
-        ↓                      ↓                ↓                ↓
-IntentClassifier → ChatbotService → Generative/Retrieval → Response Validation
-        ↓                      ↓                ↓                ↓
-Database Log ← Conversation Save ← Response Return ← Fallback Check
+```text
+Request
+  │
+  ├─ Public route? ── yes ──> input validation ──> service / database
+  │
+  └─ Protected route
+       │
+       ├─ session user exists? ── no ──> 401
+       │
+       ├─ load current User
+       │
+       ├─ query/write only records owned by current user
+       │
+       └─ return JSON response
 ```
 
-### 3. Learning Pipeline Flow
+For chat requests, the application detects the language, classifies an intent, calculates confidence and sentiment signals, generates an explainable response, stores the conversation with the current user's ID, and returns the result. Feedback is accepted only when the referenced conversation belongs to the current user.
 
-```
-User Feedback → Feedback Processing → Data Preparation → Model Training
-      ↓                ↓                    ↓                ↓
-Feedback API → FeedbackService → TrainingService → Model Evaluation
-      ↓                ↓                    ↓                ↓
-Database Save ← Quality Assessment ← Training Data ← Model Deployment
-```
+## 4. Authentication architecture
 
-## 🧠 AI/ML Architecture Details
+### Local authentication
 
-### Hybrid AI Model Architecture
+Registration validates the email and password policy, hashes the password with Werkzeug, and stores only the hash. Login compares the submitted password against the stored hash, rotates the session, and records login metadata. Logout clears the session.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           HYBRID AI SYSTEM                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────────┐                    ┌─────────────────┐                │
-│  │  RETRIEVAL PATH │                    │ GENERATIVE PATH │                │
-│  │                 │                    │                 │                │
-│  │ 1. Query        │                    │ 1. Context      │                │
-│  │ 2. Embedding    │                    │ 2. Tokenization │                │
-│  │ 3. FAISS Search │                    │ 3. Model Input  │                │
-│  │ 4. Ranking      │                    │ 4. Generation   │                │
-│  │ 5. Selection    │                    │ 5. Decoding     │                │
-│  └─────────────────┘                    └─────────────────┘                │
-│           │                                       │                        │
-│           └─────────────────┬─────────────────────┘                        │
-│                             │                                            │
-│                    ┌─────────────────┐                                   │
-│                    │ RESPONSE FUSION │                                   │
-│                    │                 │                                   │
-│                    │ 1. Confidence   │                                   │
-│                    │ 2. Quality      │                                   │
-│                    │ 3. Selection    │                                   │
-│                    │ 4. Fallback     │                                   │
-│                    └─────────────────┘                                   │
-└─────────────────────────────────────────────────────────────────────────────┘
+### Password recovery
+
+The reset flow follows a single-use token model. A cryptographically random token is generated, only its SHA-256 hash is stored in the database, and the token expires after 30 minutes. The request endpoint returns a generic response whether or not the email exists. SMTP delivery is optional in local development; when SMTP is not configured, the reset URL is logged for development visibility.
+
+```text
+Request reset
+  → generic response
+  → random token generated
+  → token hash stored with expiry
+  → SMTP email or development log
+  → token submitted once
+  → password updated and token marked used
 ```
 
-### Model Components
+### Google OAuth 2.0
 
-#### 1. Retrieval System
-- **Sentence Transformer**: `all-MiniLM-L6-v2`
-- **Vector Database**: FAISS for similarity search
-- **Knowledge Base**: Bilingual Q&A pairs
-- **Caching**: Embedding cache for performance
+Google OAuth is optional and uses the server-side authorization-code flow. The application creates a state value, redirects the user to Google with the minimal `openid email profile` scopes, validates the returned state, exchanges the authorization code, retrieves the identity, and links or creates a local user. Google access tokens are not persisted. If OAuth secrets are absent, the feature reports that it is unavailable instead of failing silently.
 
-#### 2. Generative System
-- **Base Model**: `microsoft/DialoGPT-medium`
-- **Context Window**: Conversation history
-- **Response Quality**: Confidence scoring
-- **Fallback**: Template-based responses
+## 5. Database model
 
-#### 3. Classification System
-- **Intent Classifier**: Rule-based + ML hybrid
-- **Sentiment Analyzer**: Multi-language support
-- **Language Detector**: `langdetect` library
-- **Training Pipeline**: Continuous improvement
+```text
+User 1 ─────────────── * Conversation
+ │                         │
+ │                         └──── 0..1 Feedback
+ │
+ ├──────────────────── * PasswordResetToken
+ │
+ └──────────────────── * Feedback
 
-## 🗄️ Database Schema Architecture
-
-### Entity Relationship Diagram
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    User     │    │Conversation│    │  Feedback   │
-├─────────────┤    ├─────────────┤    ├─────────────┤
-│ id (PK)     │◄───┤ user_id (FK)│◄───┤conversation_id(FK)
-│ name        │    │ id (PK)     │    │ id (PK)     │
-│ language_pref│    │ message     │    │ rating      │
-│ created_at  │    │ response    │    │ comment     │
-│ updated_at  │    │ language    │    │ timestamp   │
-│ is_active   │    │ timestamp   │    │ feedback_type│
-└─────────────┘    │ sentiment   │    └─────────────┘
-                   │ intent      │
-                   └─────────────┘
-                          │
-                          ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│TrainingData │    │ModelVersion │    │EmbeddingCache│
-├─────────────┤    ├─────────────┤    ├─────────────┤
-│ id (PK)     │    │ id (PK)     │    │ id (PK)     │
-│ question    │    │ version     │    │ text_hash   │
-│ answer      │    │ model_type  │    │ text        │
-│ language    │    │ file_path   │    │ embedding   │
-│ category    │    │ accuracy    │    │ model_name  │
-│ rating      │    │ training_date│   │ created_at  │
-│ usage_count │    │ is_active   │    └─────────────┘
-│ source      │    │ description │
-└─────────────┘    └─────────────┘
+TrainingData is independent reference data used by the training/feedback helpers.
 ```
 
-## 🔧 Service Layer Architecture
+| Entity | Responsibility | Important fields |
+| --- | --- | --- |
+| `User` | Local and external identity | `email`, `password_hash`, `auth_provider`, `google_sub`, login metadata |
+| `PasswordResetToken` | One-time recovery token state | `token_hash`, `expires_at`, `used_at`, `user_id` |
+| `Conversation` | Private message/response record | `user_id`, message, response, language, intent, confidence, sentiment, timestamp |
+| `Feedback` | User-owned response rating | `conversation_id`, `user_id`, rating, comment, timestamp |
+| `TrainingData` | Curated examples for future improvement | intent, text, language, verification flags |
 
-### Service Dependencies
+Indexes support email and Google identity lookup, reset-token expiry queries, and user/time conversation queries. Database initialization includes a lightweight compatibility step for older local SQLite files; production deployments should use a formal migration tool before schema changes become frequent.
 
-```
-ChatbotService (Main Orchestrator)
-├── LanguageService
-│   ├── langdetect
-│   ├── deep-translator
-│   └── TextPreprocessor
-├── RetrievalService
-│   ├── sentence-transformers
-│   ├── FAISS
-│   └── EmbeddingCache
-├── GenerativeService
-│   ├── transformers
-│   ├── torch
-│   └── TemplateEngine
-├── FeedbackService
-│   ├── SentimentAnalyzer
-│   └── QualityMetrics
-└── TrainingService
-    ├── scikit-learn
-    ├── ModelVersion
-    └── TrainingData
-```
+## 6. Analytics architecture
 
-### Service Communication Pattern
+`GET /api/analytics/dashboard?days=30` builds metrics only from the current user's conversations and feedback. The period is bounded to 1–90 days. The response contains aggregate cards and chart-ready series:
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   WebSocket     │    │   REST API      │    │   Background    │
-│   (Real-time)   │    │   (HTTP)        │    │   (Training)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SERVICE BUS                                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │ ChatbotService  │  │ LanguageService │  │ RetrievalService│             │
-│  │   (Orchestrator)│  │   (Translation) │  │   (Semantic)    │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-│           │                     │                     │                     │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │GenerativeService│  │FeedbackService  │  │TrainingService  │             │
-│  │   (AI Models)   │  │   (Learning)    │  │   (ML Pipeline) │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           DATA ACCESS LAYER                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
-│  │   SQLAlchemy    │  │   FAISS Index   │  │   File System   │             │
-│  │   (Database)    │  │   (Vectors)     │  │   (Models)      │             │
-│  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+| Metric group | Examples |
+| --- | --- |
+| Volume | total messages, active days |
+| Quality | average confidence, helpful ratings, satisfaction rate |
+| Distribution | top intent, intent counts, language counts |
+| Time series | daily message activity, hourly activity |
+| Usage context | latest activity and authenticated account metadata |
 
-## 🔄 Machine Learning Pipeline Architecture
+No global analytics are exposed through the user dashboard. If an administrative analytics layer is added later, it should use a separate authorization boundary and separate endpoints.
 
-### Training Pipeline Flow
+## 7. API surface
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        ML PIPELINE ARCHITECTURE                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │ DATA COLLECT│  │ DATA PREP   │  │ MODEL TRAIN │  │ EVALUATION  │       │
-│  │             │  │             │  │             │  │             │       │
-│  │ • User Conv │  │ • Cleaning  │  │ • Intent    │  │ • Accuracy  │       │
-│  │ • Feedback  │  │ • Normalize │  │ • Sentiment │  │ • Precision │       │
-│  │ • Quality   │  │ • Tokenize  │  │ • Knowledge │  │ • Recall    │       │
-│  │ • Errors    │  │ • Label     │  │ • Embedding │  │ • F1-Score  │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-│         │                 │                │                │              │
-│         └─────────────────┼────────────────┼────────────────┘              │
-│                           │                │                               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
-│  │ DEPLOYMENT  │  │ MONITORING  │  │ ROLLBACK    │                        │
-│  │             │  │             │  │             │                        │
-│  │ • A/B Test  │  │ • Metrics   │  │ • Version   │                        │
-│  │ • Gradual   │  │ • Alerts    │  │ • Rollback  │                        │
-│  │ • Full      │  │ • Logs      │  │ • Recovery  │                        │
-│  │ • Validation│  │ • Dashboard │  │ • Backup    │                        │
-│  └─────────────┘  └─────────────┘  └─────────────┘                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+| Area | Routes |
+| --- | --- |
+| Platform | `GET /`, `GET /api/health`, `GET /api/meta`, `GET /api/suggestions` |
+| Local auth | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` |
+| Recovery | `POST /api/auth/request-reset`, `POST /api/auth/reset-password` |
+| Google OAuth | `GET /api/auth/google`, `GET /api/auth/google/callback` |
+| Private work | `POST /api/chat`, `GET /api/conversations`, `POST /api/feedback`, `GET /api/analytics/dashboard` |
+| Language | `POST /api/translate` |
 
-### Model Versioning Strategy
+## 8. Security boundaries and deployment notes
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        MODEL VERSIONING                                     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │   v1.0.0    │  │   v1.1.0    │  │   v1.2.0    │  │   v2.0.0    │       │
-│  │ (Baseline)  │  │ (Feedback)  │  │ (Improved)  │  │ (Major)     │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-│         │                 │                │                │              │
-│         ▼                 ▼                ▼                ▼              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │   Active    │  │   Testing   │  │   Staging   │  │ Development │       │
-│  │ (Production)│  │ (A/B Test)  │  │ (Validation)│  │ (Training)  │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+The application uses HttpOnly sessions, password hashing, ownership-scoped queries, token hashing, token expiry, OAuth state validation, generic recovery responses, and input validation. Production deployment should additionally enable HTTPS, a strong secret key, secure cookie settings, CSRF protection for cross-origin state-changing requests, rate limiting for login and recovery, a managed secrets store, structured logging, and formal database migrations.
 
-## 🔒 Security Architecture
+The included Docker configuration is a starting point rather than proof of production readiness. SQLite is suitable for local development and demonstrations; PostgreSQL is the preferred production database for concurrent workloads.
 
-### Security Layers
+## 9. Source of truth
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SECURITY ARCHITECTURE                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │ APPLICATION │  │   NETWORK   │  │   DATABASE  │  │   INFRA     │       │
-│  │   SECURITY  │  │   SECURITY  │  │   SECURITY  │  │   SECURITY  │       │
-│  │             │  │             │  │             │  │             │       │
-│  │ • Input Val │  │ • HTTPS     │  │ • Encryption│  │ • Firewall  │       │
-│  │ • Auth      │  │ • WAF       │  │ • Access    │  │ • VPN       │       │
-│  │ • Rate Limit│  │ • DDoS      │  │ • Audit     │  │ • Monitoring│       │
-│  │ • CORS      │  │ • SSL/TLS   │  │ • Backup    │  │ • Alerts    │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+The implementation in `app.py`, `src/database/models.py`, `src/services/`, `templates/index.html`, `tests/test_app.py`, `README.md`, and `env.example` is authoritative. Historical documents that describe FAISS, DialoGPT, Socket.IO events, or unimplemented retrieval/generative services are no longer considered part of the current architecture.
 
-## 📊 Monitoring & Observability
+## References
 
-### Monitoring Stack
+1. [Google OAuth 2.0 for Web Server Applications](https://developers.google.com/identity/protocols/oauth2/web-server)
+2. [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
+3. [Flask Documentation](https://flask.palletsprojects.com/)
+4. [Flask-SQLAlchemy Documentation](https://flask-sqlalchemy.palletsprojects.com/)
+5. [Werkzeug Security Utilities](https://werkzeug.palletsprojects.com/en/latest/utils/#module-werkzeug.security)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        MONITORING ARCHITECTURE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │ APPLICATION │  │ PERFORMANCE │  │   BUSINESS  │  │   SECURITY  │       │
-│  │   METRICS   │  │   METRICS   │  │   METRICS   │  │   METRICS   │       │
-│  │             │  │             │  │             │  │             │       │
-│  │ • Response  │  │ • CPU/Memory│  │ • User      │  │ • Failed    │       │
-│  │ • Error Rate│  │ • Database  │  │ • Sessions  │  │ • Suspicious│       │
-│  │ • Throughput│  │ • Network   │  │ • Feedback  │  │ • Access    │       │
-│  │ • Latency   │  │ • Disk I/O  │  │ • Quality   │  │ • Threats   │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-│         │                 │                │                │              │
-│         └─────────────────┼────────────────┼────────────────┘              │
-│                           │                │                               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
-│  │   LOGGING   │  │   ALERTING  │  │   DASHBOARD │                        │
-│  │             │  │             │  │             │                        │
-│  │ • Structured│  │ • Threshold │  │ • Real-time │                        │
-│  │ • Rotation  │  │ • Escalation│  │ • Historical│                        │
-│  │ • Analysis  │  │ • Notification│  │ • Custom   │                        │
-│  │ • Search    │  │ • Recovery  │  │ • Export    │                        │
-│  └─────────────┘  └─────────────┘  └─────────────┘                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+## License
 
-## 🚀 Deployment Architecture
-
-### Production Deployment
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        DEPLOYMENT ARCHITECTURE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │   LOAD      │  │   WEB       │  │   APP       │  │   DATABASE  │       │
-│  │  BALANCER   │  │   SERVERS   │  │   SERVERS   │  │   CLUSTER   │       │
-│  │             │  │             │  │             │  │             │       │
-│  │ • HAProxy   │  │ • Nginx     │  │ • Flask     │  │ • PostgreSQL│       │
-│  │ • SSL       │  │ • Static    │  │ • Gunicorn  │  │ • Redis     │       │
-│  │ • Health    │  │ • Cache     │  │ • Workers   │  │ • Backup    │       │
-│  │ • Failover  │  │ • CDN       │  │ • Auto-scale│  │ • Replication│      │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-│         │                 │                │                │              │
-│         └─────────────────┼────────────────┼────────────────┘              │
-│                           │                │                               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                        │
-│  │   CACHE     │  │   STORAGE   │  │   MONITORING│                        │
-│  │             │  │             │  │             │                        │
-│  │ • Redis     │  │ • S3/Cloud  │  │ • Prometheus│                        │
-│  │ • Memcached │  │ • Models    │  │ • Grafana   │                        │
-│  │ • CDN       │  │ • Logs      │  │ • Alerting  │                        │
-│  │ • Session   │  │ • Backups   │  │ • Logging   │                        │
-│  └─────────────┘  └─────────────┘  └─────────────┘                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-## 🔄 Scalability Architecture
-
-### Horizontal Scaling Strategy
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        SCALABILITY ARCHITECTURE                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│  │   AUTO      │  │   DATABASE  │  │   CACHE     │  │   STORAGE   │       │
-│  │  SCALING    │  │   SCALING   │  │   SCALING   │  │   SCALING   │       │
-│  │             │  │             │  │             │  │             │       │
-│  │ • CPU/Memory│  │ • Read      │  │ • Redis     │  │ • CDN       │       │
-│  │ • Traffic   │  │ • Write     │  │ • Clustering│  │ • S3/Cloud  │       │
-│  │ • Time-based│  │ • Sharding  │  │ • Replication│  │ • Backup    │       │
-│  │ • Custom    │  │ • Partition │  │ • Load      │  │ • Archive   │       │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘       │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-**This architecture provides a comprehensive, scalable, and maintainable foundation for the Smart AI Chatbot system, ensuring high performance, reliability, and continuous improvement capabilities.** 
+This project is released under the MIT License. See [LICENSE.md](LICENSE.md).

@@ -1,230 +1,109 @@
-# Database Refactoring: Pure SQLAlchemy to Flask-SQLAlchemy
+# Database Refactor Notes
 
-## Overview
+## Purpose
 
-This document explains the refactoring of the database models from pure SQLAlchemy to Flask-SQLAlchemy to resolve the `'NoneType' object has no attribute 'init_app'` error and provide better integration with Flask applications.
+This document records the migration from the original pure-SQLAlchemy prototype to the Flask-SQLAlchemy integration used by Career Copilot. It is a historical engineering note; the current schema and relationships are defined in `src/database/models.py`, and the current runtime configuration is described in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Problem Description
+## Original issue
 
-The original setup had two main issues:
+The early prototype defined a declarative SQLAlchemy base while the Flask application expected a Flask-SQLAlchemy object. This created an initialization mismatch: the application attempted to call `init_app` on an object that was not a configured Flask-SQLAlchemy extension.
 
-1. **`models.py`** used pure SQLAlchemy with `declarative_base()` and defined `db = None`
-2. **`app.py`** tried to use Flask-SQLAlchemy by calling `db.init_app(app)`, but `db` was `None`
+## Current implementation
 
-This caused the error: `'NoneType' object has no attribute 'init_app'`
+The application now creates one shared extension instance:
 
-## Solution: Flask-SQLAlchemy Integration
-
-### Changes Made
-
-#### 1. `src/database/models.py` - Refactored to use Flask-SQLAlchemy
-
-**Before (Pure SQLAlchemy):**
-```python
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-
-Base = declarative_base()
-
-class User(Base):
-    __tablename__ = 'users'
-    id = Column(String(50), primary_key=True)
-    # ... other fields
-
-# This was None and caused the error
-db = None
-```
-
-**After (Flask-SQLAlchemy):**
 ```python
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.sql import func
 
-# Create Flask-SQLAlchemy instance
 db = SQLAlchemy()
-
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.String(50), primary_key=True)
-    # ... other fields using db.Column, db.ForeignKey, db.relationship
 ```
 
-#### 2. `app.py` - Proper Flask-SQLAlchemy Initialization
+The Flask application configures the database URI and initializes the extension:
 
-**Before:**
 ```python
-from src.database.models import db, User, Conversation, Feedback, TrainingData
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL", "sqlite:///career_copilot.db"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# This failed because db was None
 db.init_app(app)
 ```
 
-**After:**
-```python
-# Import database models and db instance
-from src.database.models import db, User, Conversation, Feedback, TrainingData
+Models inherit from `db.Model` and use the extension's column, relationship, and foreign-key helpers.
 
-# Configure Flask app with database settings
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///chatbot.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+## Current entities
 
-# Initialize Flask-SQLAlchemy with the app
-# This connects the db instance from models.py to the Flask app
-db.init_app(app)
+| Entity | Purpose |
+| --- | --- |
+| `User` | Local identity, optional Google identity, language preference, and login metadata |
+| `PasswordResetToken` | Hashed, expiring, single-use password recovery token |
+| `Conversation` | User-owned message, response, and explainability metadata |
+| `Feedback` | User-owned rating and optional comment |
+| `TrainingData` | Curated examples for future training or response improvement |
 
-@app.before_first_request
-def create_tables():
-    """Create database tables if they don't exist."""
-    with app.app_context():
-        db.create_all()
-        logger.info("Database tables created successfully")
+The historical prototype mentioned `ModelVersion` and `EmbeddingCache`. Those models are not present in the current runtime and must not be recreated unless a concrete feature requires them.
+
+## Relationships and ownership
+
+```text
+User 1 ─── * Conversation
+User 1 ─── * Feedback
+User 1 ─── * PasswordResetToken
+Conversation 1 ─── 0..1 Feedback
 ```
 
-## Key Benefits of Flask-SQLAlchemy
+Conversation and feedback queries are scoped to the authenticated user. This is a security boundary, not just a UI convention. A client-supplied user identifier must never be used to bypass the session-derived owner.
 
-1. **Better Flask Integration**: Automatic app context management
-2. **Simplified Configuration**: Database URI configuration through Flask config
-3. **Query Interface**: Models have a `.query` attribute for easy querying
-4. **Session Management**: Automatic session handling within Flask request context
-5. **Migration Support**: Better integration with Flask-Migrate for database migrations
+## Schema compatibility
 
-## Model Changes Summary
+Application startup creates missing tables and includes a lightweight compatibility step for older local SQLite databases, including the account fields introduced during authentication work. This approach supports the local portfolio demo. It is not a replacement for formal migrations in production.
 
-All models now inherit from `db.Model` instead of `Base`:
+Before changing a deployed schema:
 
-- `User(db.Model)` - User information and preferences
-- `Conversation(db.Model)` - Chat messages and responses
-- `Feedback(db.Model)` - User feedback on responses
-- `TrainingData(db.Model)` - Training data for ML improvement
-- `ModelVersion(db.Model)` - ML model version tracking
-- `EmbeddingCache(db.Model)` - Cached embeddings for performance
+1. Back up the database.
+2. Test the change against a copy of the production schema.
+3. Prefer Alembic or Flask-Migrate for repeatable migrations.
+4. Deploy the application and schema change in a controlled order.
+5. Verify authentication and ownership queries after migration.
 
-## Column and Relationship Changes
+## Database configuration
 
-**Columns:**
-- `Column(Type)` → `db.Column(db.Type)`
-- `ForeignKey('table.id')` → `db.ForeignKey('table.id')`
+Local development:
 
-**Relationships:**
-- `relationship("Model", back_populates="field")` → `db.relationship("Model", back_populates="field")`
-
-## Usage Examples
-
-### Creating Records
-```python
-# Create a new user
-user = User(id='user123', language_preference='en')
-db.session.add(user)
-db.session.commit()
+```dotenv
+DATABASE_URL=sqlite:///career_copilot.db
 ```
 
-### Querying Records
-```python
-# Find user by ID
-user = User.query.filter_by(id='user123').first()
+Production-oriented example:
 
-# Get all conversations for a user
-conversations = Conversation.query.filter_by(user_id='user123').all()
-
-# Count total users
-user_count = User.query.count()
+```dotenv
+DATABASE_URL=postgresql://username:password@host:5432/career_copilot
 ```
 
-### Updating Records
-```python
-# Update user language preference
-user = User.query.filter_by(id='user123').first()
-user.language_preference = 'ar'
-db.session.commit()
-```
+Credentials must be supplied through a secrets manager or deployment environment and must not be committed to Git.
 
-### Deleting Records
-```python
-# Delete a user and all related data (cascade)
-user = User.query.filter_by(id='user123').first()
-db.session.delete(user)
-db.session.commit()
-```
+## Verification
 
-## Testing the Setup
-
-Run the test script to verify the setup:
+Run the database test and the full suite:
 
 ```bash
 python test_db_setup.py
+pytest -q
 ```
 
-This will:
-1. Create a test Flask app
-2. Initialize the database
-3. Create all tables
-4. Test basic queries
-5. Clean up the test database
+The tests verify table initialization, account creation, password hashing, reset-token behavior, conversation ownership, feedback ownership, and analytics isolation.
 
-## Configuration
+## Current limitations and next steps
 
-The database configuration is handled through Flask app config:
+The repository does not yet include Alembic, connection-pool tuning, a database backup scheduler, or an administrative data-retention workflow. These are appropriate next steps before production use, especially when moving from SQLite to PostgreSQL.
 
-```python
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///chatbot.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-```
+## Related documentation
 
-Environment variables:
-- `DATABASE_URL`: Database connection string
-- Default: `sqlite:///chatbot.db` (SQLite database)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [SETUP.md](SETUP.md)
+- [README.md](README.md)
+- [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html)
 
-## Migration from Old Setup
+## License
 
-If you have existing data in the old database:
-
-1. **Backup your data** before making changes
-2. **Export data** from old tables if needed
-3. **Run the new setup** to create new tables
-4. **Import data** into the new structure if necessary
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Import Errors**: Make sure `flask-sqlalchemy` is installed
-   ```bash
-   pip install flask-sqlalchemy
-   ```
-
-2. **Database URI Issues**: Check your `DATABASE_URL` environment variable
-
-3. **Permission Errors**: Ensure the application has write permissions to the database directory
-
-4. **Table Creation Errors**: Make sure all model imports are correct and there are no circular imports
-
-### Debug Mode
-
-Enable Flask debug mode to see detailed error messages:
-
-```python
-app.config['DEBUG'] = True
-```
-
-## Next Steps
-
-1. **Test the application** to ensure all database operations work correctly
-2. **Add database migrations** using Flask-Migrate for production deployments
-3. **Implement proper error handling** for database operations
-4. **Add database connection pooling** for production environments
-5. **Set up database backups** for data safety
-
-## Files Modified
-
-- `src/database/models.py` - Refactored to use Flask-SQLAlchemy
-- `app.py` - Updated database initialization
-- `test_db_setup.py` - New test script for verification
-- `DATABASE_REFACTOR.md` - This documentation file
-
-## Dependencies
-
-Make sure these packages are installed:
-- `flask-sqlalchemy` - Flask-SQLAlchemy integration
-- `sqlalchemy` - SQLAlchemy ORM
-- `python-dotenv` - Environment variable loading 
+MIT License. See [LICENSE.md](LICENSE.md).

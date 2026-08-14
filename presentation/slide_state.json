@@ -1,0 +1,116 @@
+{
+  "project_info": {
+    "title": "Career Copilot",
+    "created": 1786684774.466,
+    "last_updated": 1786684831.407,
+    "total_slides": 10
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "product",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "workflow",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "architecture",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "authentication",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "google_oauth",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "analytics",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "engineering",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "cv",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "references",
+      "state": "edited",
+      "pageNum": 10
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Career Copilot",
+      "summary": "Secure, Explainable Career Guidance for Students. Portfolio project by Taha Deab."
+    },
+    {
+      "id": "product",
+      "title": "The product turns career questions into measurable next steps",
+      "summary": "Introduce the product goal, bilingual guidance, private accounts, and explainable response signals."
+    },
+    {
+      "id": "workflow",
+      "title": "A focused workflow connects guidance to outcomes",
+      "summary": "Show the four-step flow: ask, understand, guide, and improve."
+    },
+    {
+      "id": "architecture",
+      "title": "The architecture keeps product boundaries clear",
+      "summary": "Explain the browser UI, Flask REST API, service layer, SQLAlchemy models, and database strategy.",
+      "image_plan": "/home/ubuntu/upload/search_images/LRJeZAXzj7G9.png - Flask logo illustrates the backend architecture slide"
+    },
+    {
+      "id": "authentication",
+      "title": "Authentication makes the chatbot a private workspace",
+      "summary": "Explain local registration, password hashing, session ownership, private history, and password recovery."
+    },
+    {
+      "id": "google_oauth",
+      "title": "Google OAuth adds a trusted identity path",
+      "summary": "Explain the server-side authorization-code flow, scopes, state validation, and verified identity linking.",
+      "image_plan": "/home/ubuntu/upload/search_images/O6N3u7zYV8tk.png - Google logo illustrates Google OAuth login slide"
+    },
+    {
+      "id": "analytics",
+      "title": "Personal analytics turns conversations into product insight",
+      "summary": "Show the 7/30/90-day dashboard, KPIs, intent and language mix, activity, and satisfaction metrics.",
+      "image_plan": "/home/ubuntu/upload/search_images/PuhKh3cRiM7K.jpg - Dashboard graphic illustrates personal analytics slide"
+    },
+    {
+      "id": "engineering",
+      "title": "The implementation demonstrates production-minded engineering",
+      "summary": "Highlight integration tests, API-first design, offline-friendly defaults, and next hardening steps.",
+      "image_plan": "/home/ubuntu/upload/search_images/Kkj135xcNPHZ.png - SQLAlchemy logo illustrates implementation technology slide"
+    },
+    {
+      "id": "cv",
+      "title": "A strong CV story connects technology to impact",
+      "summary": "Provide a polished CV entry and technology keywords for the project."
+    },
+    {
+      "id": "references",
+      "title": "References and implementation notes",
+      "summary": "List official Google OAuth and OWASP password reset sources, repository, and verification results."
+    }
+  ]
+}

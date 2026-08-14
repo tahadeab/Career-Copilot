@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FAFAFA;color:#000;font-family:Arial,sans-serif}
+.slide-container{width:1280px;min-height:720px;background:#FAFAFA;display:grid;grid-template-columns:repeat(12,1fr);position:relative}
+.left{grid-column:2/span 7;padding-top:58px}
+.kicker{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#D97706;font-weight:700}
+.title{font:700 45px Georgia,serif;line-height:1.06;letter-spacing:-1.2px;margin-top:18px;max-width:720px}
+.lede{font-size:19px;line-height:1.48;color:#444;max-width:590px;margin-top:22px}
+.right{grid-column:10/span 2;padding-top:64px;border-top:4px solid #000;margin-top:58px}
+.tech-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#777;line-height:1.4}
+.logo-frame{width:300px;height:70px;margin-top:24px;display:flex;align-items:center;justify-content:flex-start}
+.logo-frame img{width:300px;height:70px;object-fit:contain;object-position:left center}
+.tech-caption{font-size:13px;line-height:1.45;color:#555;margin-top:22px;max-width:235px}
+.rule{grid-column:2/span 10;border-top:1px solid #E5E5E5;margin-top:78px}
+.points{grid-column:2/span 10;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;padding-top:25px}
+.point{border-top:3px solid #000;padding-top:13px}
+.point .num{color:#D97706;font:700 21px Georgia,serif;margin-bottom:9px}
+.point b{display:block;font-size:15px;margin-bottom:7px}
+.point span{display:block;color:#555;font-size:13px;line-height:1.45;max-width:190px}
+.footer{position:absolute;left:10%;right:10%;bottom:42px;border-top:1px solid #E5E5E5;padding-top:12px;color:#777;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <section class="left">
+    <div class="kicker">07 / Engineering quality</div>
+    <div class="title">The implementation demonstrates production-minded engineering.</div>
+    <div class="lede">The project is intentionally transparent: tested core flows, clean service boundaries, and explicit next steps instead of unsupported claims.</div>
+  </section>
+  <aside class="right">
+    <div class="tech-label">Persistence layer</div>
+    <div class="logo-frame"><img src="/home/ubuntu/upload/search_images/Kkj135xcNPHZ.png" alt="SQLAlchemy logo"></div>
+    <div class="tech-caption">SQLAlchemy models connect users, reset tokens, conversations, feedback, and training data.</div>
+  </aside>
+  <div class="rule"></div>
+  <section class="points">
+    <div class="point"><div class="num">01</div><b>Verified</b><span>10 integration tests cover authentication, isolation, recovery, analytics, and validation.</span></div>
+    <div class="point"><div class="num">02</div><b>API-first</b><span>Clear REST boundaries support future mobile clients or a hosted LLM/RAG layer.</span></div>
+    <div class="point"><div class="num">03</div><b>Offline-friendly</b><span>Local defaults keep the portfolio demo transparent and easy to run.</span></div>
+    <div class="point"><div class="num">04</div><b>Next hardening</b><span>CSRF protection, rate limiting, HTTPS, observability, and formal migrations.</span></div>
+  </section>
+  <div class="footer">Engineering choices that make the project credible in a technical interview</div>
+</div>
+</body>
+</html>
